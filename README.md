@@ -1,93 +1,82 @@
 # CARLA
 
-
+Multi-Modal Collaborative Perception for V2X in CARLA: A Deep 3D Point Cloud Alignment Approach for Intersection Localization
 
 ## Getting started
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### Starting the Container
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Prerequisites: See [CARLA's documentation](https://carla-ue5.readthedocs.io/en/latest/). We will be using the [Docker setup](https://carla-ue5.readthedocs.io/en/latest/start_quickstart/#running-carla-using-a-docker-container) for CARLA 0.10.0.
 
-## Add your files
+First, make sure you are in this repository's directory. This will be relevant during the docker mounting process.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+`cd /path/to/this/repo`
+
+First, run CARLA's 0.10.0 DockerHub image. The following command does several things:
+- Downloads DockerHub image `carla:0.10.0`, if it isn't already downloaded
+- Runs `./CarlaUnreal.sh` to start the CARLA server in a new window (this may take a few seconds to load, depending on your GPU)
+- Mounts this repository at `/mnt` inside the container. This gives us access from within the container to run our Python scripts with the simulator. <br />
+Note: If you are running the command from somewhere else, replace `$(pwd)` with the path to this repository.
+- Gives our container the name `carla_server`. You can use either this or the container ID to attach terminals in the subsequent commands.
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.lrz.de/sacp/carla.git
-git branch -M main
-git push -uf origin main
+docker run -d \
+    --mount type=bind,src=$(pwd),dst=/mnt \
+    --name carla_server \
+    --runtime=nvidia \
+    --net=host \
+    --user=$(id -u):$(id -g) \
+    --env=DISPLAY=$DISPLAY \
+    --env=NVIDIA_VISIBLE_DEVICES=all \
+    --env=NVIDIA_DRIVER_CAPABILITIES=all \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    carlasim/carla:0.10.0 bash CarlaUnreal.sh -nosound
 ```
 
-## Integrate with your tools
+<br />
 
-- [ ] [Set up project integrations](https://gitlab.lrz.de/sacp/carla/-/settings/integrations)
+### Installing packages
 
-## Collaborate with your team
+Next, we will install the packages required to run scripts that use CARLA's PythonAPI inside of our container.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+#### System Packages
 
-## Test and Deploy
+Attach a root terminal to the running container (we need root to run `apt-get`).
 
-Use the built-in continuous integration in GitLab.
+`docker exec -u root -it carla_server bash`
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Install `pip` and `git`.
 
-***
+```
+apt-get update && apt-get upgrade -y
+apt-get install -y python3-pip git
+```
 
-# Editing this README
+Type `exit` in your root container terminal, open a new terminal. 
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+#### Python Packages
 
-## Suggestions for a good README
+Next, attach a non-root user terminal to the running container.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+`docker exec -it carla_server bash`
 
-## Name
-Choose a self-explaining name for your project.
+Install Python dependencies and CARLA's PythonAPI
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```
+cd ~/PythonAPI/examples
+python3.10 -m pip install -r requirements.txt
+python3.10 -m pip install ../carla/dist/carla-0.10.0-cp310-cp310-linux_x86_64.whl
+python3.10 -m pip install shapely networkx
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+<br />
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### PythonAPI Test Run
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Now you're all set to try out any one of the scripts in the examples folder!
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Let's try running `generate_traffic.py`...
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```python3.10 generate_traffic.py```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This should spawn multiple pedestrians and cars driving around the CARLA map.
