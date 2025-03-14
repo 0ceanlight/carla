@@ -1,6 +1,6 @@
 # CARLA
 
-Multi-Modal Collaborative Perception for V2X in CARLA: A Deep 3D Point Cloud Alignment Approach for Intersection Localization
+Multi-Modal Collaborative Perception for V2X in CARLA: A Deep 3D Point Cloud Alignment Approach for Intersection Localization.
 
 ## Getting started
 
@@ -10,11 +10,13 @@ Prerequisites: See [CARLA's documentation](https://carla-ue5.readthedocs.io/en/l
 
 First, make sure you are in this repository's directory. This will be relevant during the docker mounting process.
 
-`cd /path/to/this/repo`
+```
+cd /path/to/this/repo
+```
 
 First, run CARLA's 0.10.0 DockerHub image. The following command does several things:
-- Downloads DockerHub image `carla:0.10.0`, if it isn't already downloaded
-- Runs `./CarlaUnreal.sh` to start the CARLA server in a new window (this may take a few seconds to load, depending on your GPU)
+- Downloads DockerHub image `carla:0.10.0`, if it isn't already downloaded.
+- Runs `./CarlaUnreal.sh` to start the CARLA server in a new window (this may take a few seconds to load, depending on your GPU).
 - Mounts this repository at `/mnt` inside the container. This gives us access from within the container to run our Python scripts with the simulator. <br />
 Note: If you are running the command from somewhere else, replace `$(pwd)` with the path to this repository.
 - Gives our container the name `carla_server`. You can use either this or the container ID to attach terminals in the subsequent commands.
@@ -43,7 +45,9 @@ Next, we will install the packages required to run scripts that use CARLA's Pyth
 
 Attach a root terminal to the running container (we need root to run `apt-get`).
 
-`docker exec -u root -it carla_server bash`
+```
+docker exec -u root -it carla_server bash
+```
 
 Install `pip` and `git`.
 
@@ -58,9 +62,11 @@ Type `exit` in your root container terminal, open a new terminal.
 
 Next, attach a non-root user terminal to the running container.
 
-`docker exec -it carla_server bash`
+```
+docker exec -it carla_server bash
+```
 
-Install Python dependencies and CARLA's PythonAPI
+Install Python dependencies and CARLA's PythonAPI.
 
 ```
 cd ~/PythonAPI/examples
@@ -75,8 +81,10 @@ python3.10 -m pip install shapely networkx
 
 Now you're all set to try out any one of the scripts in the examples folder!
 
-Let's try running `generate_traffic.py`...
+Let's try running `generate_traffic.py`.
 
-```python3.10 generate_traffic.py```
+```
+python3.10 generate_traffic.py
+```
 
 This should spawn multiple pedestrians and cars driving around the CARLA map.
