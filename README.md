@@ -75,6 +75,19 @@ python3.10 -m pip install ../carla/dist/carla-0.10.0-cp310-cp310-linux_x86_64.wh
 python3.10 -m pip install shapely networkx
 ```
 
+If you're not running scripts from within the carla `PythonAPI` directory, you will need to add it to your `PYTHONPATH`.
+
+```
+export PYTHONPATH=/home/carla/PythonAPI/carla:$PYTHONPATH
+```
+
+Or, to keep this in your path when you open a new terminal, add it to `.bashrc`.
+
+```
+echo 'export PYTHONPATH=/home/carla/PythonAPI/carla:$PYTHONPATH' >> ~/.bashrc
+source ~/.bashrc
+```
+
 <br />
 
 ### PythonAPI Test Run
@@ -84,7 +97,7 @@ Now you're all set to try out any one of the scripts in the examples folder!
 Let's try running `generate_traffic.py`.
 
 ```
-python3.10 generate_traffic.py
+python3 generate_traffic.py
 ```
 
 This should spawn multiple pedestrians and cars driving around the CARLA map.
