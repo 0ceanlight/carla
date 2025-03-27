@@ -17,6 +17,7 @@ cd /path/to/this/repo
 First, run CARLA's 0.10.0 DockerHub image. The following command does several things:
 - Downloads DockerHub image `carla:0.10.0`, if it isn't already downloaded.
 - Runs `./CarlaUnreal.sh` to start the CARLA server in a new window (this may take a few seconds to load, depending on your GPU).
+- Note: You can also run it with flags like `-dx11` to use DirectX, or `-quality-level=Low` to use less resources
 - Mounts this repository at `/mnt` inside the container. This gives us access from within the container to run our Python scripts with the simulator. <br />
 Note: If you are running the command from somewhere else, replace `$(pwd)` with the path to this repository.
 - Gives our container the name `carla_server`. You can use either this or the container ID to attach terminals in the subsequent commands.
