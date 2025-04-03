@@ -120,7 +120,7 @@ def camera_callback(image, display_window):
     display_window.update_image(image.raw_data)
 
 # ==============================================================================
-# -- Game Loop ---------------------------------------------------------
+# -- Game Loop -----------------------------------------------------------------
 # ==============================================================================
 
 
@@ -158,7 +158,7 @@ def game_loop(args):
         traffic_manager.set_global_distance_to_leading_vehicle(2.5)
 
 
-        # AGENT ----------------------------------------------------------
+        # AGENT ----------------------------------------------------------------
         vehicle_bp = world.get_blueprint_library().find("vehicle.dodge.charger")
         spawn_points = world.get_map().get_spawn_points()
         ego_destination = random.choice(spawn_points).location
@@ -170,7 +170,7 @@ def game_loop(args):
         traffic_manager.update_vehicle_lights(ego_vehicle, True)
 
 
-        # EGO CAMERA -----------------------------------------------------
+        # EGO CAMERA -----------------------------------------------------------
         # spawn a camera 
         ego_camera_bp = world.get_blueprint_library().find('sensor.camera.rgb')
         ego_camera_bp.set_attribute("image_size_x", str(args.width))
@@ -192,7 +192,7 @@ def game_loop(args):
         # Location(x=-51.755508, y=-1.344367, z=0.076584)
 
 
-        # MISC. SETUP ----------------------------------------------------
+        # MISC. SETUP ----------------------------------------------------------
         # keep tracking of actors to remove at the end
         actor_list.append(ego_vehicle)
         actor_list.append(ego_camera)
@@ -205,7 +205,7 @@ def game_loop(args):
         # traffic_manager.vehicle_percentage_speed_difference(ego_vehicle, 15)
 
 
-        # LOOP -----------------------------------------------------------
+        # LOOP -----------------------------------------------------------------
         while True:
             if args.asynch:
                 world.wait_for_tick()
@@ -238,7 +238,7 @@ def game_loop(args):
 
 
 # ==============================================================================
-# -- main() --------------------------------------------------------------
+# -- main() --------------------------------------------------------------------
 # ==============================================================================
 
 def main():
