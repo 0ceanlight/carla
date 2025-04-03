@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""This script periodically prints the coordinates of the spectator in the CARLA 
+simulator. This can be used to get coordinates of actors, objects, roads, or 
+anything else in a map."""
+
 # ==============================================================================
 # -- find carla module ---------------------------------------------------------
 # ==============================================================================
@@ -9,14 +13,6 @@ import glob
 import os
 import sys
 import time
-
-try:
-    sys.path.append(glob.glob('./PythonAPI/carla/dist/carla-*%d.%d-%s.egg' % (
-        sys.version_info.major,
-        sys.version_info.minor,
-        'win-amd64' if os.name == 'nt' else 'linux-x86_64'))[0])
-except IndexError:
-    pass
 
 # ==============================================================================
 # -- imports -------------------------------------------------------------------
