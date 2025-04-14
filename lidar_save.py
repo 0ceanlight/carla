@@ -50,12 +50,73 @@ def euler_to_quaternion(roll, pitch, yaw):
     cr = math.cos(roll * 0.5)
     sr = math.sin(roll * 0.5)
 
-    qx = cr * cp * sy - sr * sp * cy
-    qy = sr * cp * sy + cr * sp * cy
-    qz = cr * sp * cy - sr * cp * sy
+    qx = sr * cp * cy - cr * sp * sy
+    qy = cr * sp * cy + sr * cp * sy
+    qz = cr * cp * sy - sr * sp * cy
     qw = cr * cp * cy + sr * sp * sy
 
     return (qx, qy, qz, qw)
+
+def append_right_handed_tum_pose(actor, timestamp, filename):
+        # Get the location of the vehicle
+        actor_location = actor.get_transform().location
+
+        # Save the location to a file in TUM format
+        # TUM format: timestamp tx ty tz qx qy qz qw
+        # where qx, qy, qz, qw are the quaternion components 
+        # quaternions will require conversion because carla uses pitch, roll, yaw
+        
+        # TODO: is -pitch, -yaw conversion correct?
+        # ALTERNATIVE: swap qx and qz to account for carla's left handed 
+        # coordinate system, leave all else untouched
+        qx, qy, qz, qw = euler_to_quaternion(
+            actor.get_transform().rotation.roll,
+            -actor.get_transform().rotation.pitch,
+            -actor.get_transform().rotation.yaw
+        )
+
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        # Append new line to file, all formatted as float with 4 decimal places
+        with open(filename, 'a') as f:
+            # Write in TUM format: timestamp tx ty tz qx qy qz qw
+            # Save negative y to convert to right-handed coordinate system
+            f.write(
+                f"{timestamp:.4f} "
+                f"{actor_location.x:.4f} {-actor_location.y:.4f} {actor_location.z:.4f} "
+                # f"{qx:.4f} {qy:.4f} {qz:.4f} {qw:.4f}\n"
+                f"{actor.get_transform().rotation.roll:.4f} "
+                f"{actor.get_transform().rotation.pitch:.4f} "
+                f"{actor.get_transform().rotation.yaw:.4f}\n"
+            )
+
+def save_right_handed_ply(lidar_data, filename):
+    """
+    Save the LiDAR data to a PLY file in right-handed coordinate system.
+    :param lidar_data: LiDAR data to save
+    :param filename: Name of the file to save the data
+    """
+    # Convert the point cloud to a numpy array
+    points = np.frombuffer(lidar_data.raw_data, dtype=np.float32).copy()
+    points = points.reshape((-1, 4))
+
+    # Flip Y-axis to convert to right-handed coordinate system
+    points[:, 1] *= -1
+
+
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    # Save to ASCII .ply file
+    with open(filename, 'w') as f:
+        f.write('ply\n')
+        f.write('format ascii 1.0\n')
+        f.write(f'element vertex {points.shape[0]}\n')
+        f.write('property float32 x\n')
+        f.write('property float32 y\n')
+        f.write('property float32 z\n')
+        f.write('property float32 I\n')
+        f.write('end_header\n')
+        np.savetxt(f, points, fmt='%.4f %.4f %.4f %.4f', delimiter=' ')
 
 # ==============================================================================
 # -- Add PythonAPI for release mode --------------------------------------------
@@ -92,33 +153,15 @@ def lidar_callback(point_cloud, data_dir, ego_vehicle=None):
 
     print(f"Saving LiDAR data for: {frame_counter}, point count: {(point_cloud)}")
 
-    point_cloud.save_to_disk(os.path.join(data_dir, f'lidar/{frame_counter}.ply'))
+    ply_path = os.path.join(data_dir, f'lidar/{frame_counter}.ply')
+    # Save the point cloud to a file in PLY format
+    save_right_handed_ply(point_cloud, ply_path)
 
     if ego_vehicle is not None:
-        # Get the location of the vehicle
-        ego_location = ego_vehicle.get_transform().location
-
-        # Save the location to a file in TUM format
-        # TUM format: timestamp tx ty tz qx qy qz qw
-        # where qx, qy, qz, qw are the quaternion components 
-        # quaternions will require conversion because carla uses pitch, roll, yaw
-        qx, qy, qz, qw = euler_to_quaternion(
-            ego_vehicle.get_transform().rotation.roll,
-            ego_vehicle.get_transform().rotation.pitch,
-            ego_vehicle.get_transform().rotation.yaw
-        )
-
-        # Create directory if it doesn't exist
         filename = os.path.join(data_dir, f'ground_truth_poses_tum.txt')
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        # Append new line to file, all formatted as float with 4 decimal places
-        with open(filename, 'a') as f:
-            # Write in TUM format: timestamp tx ty tz qx qy qz qw
-            f.write(
-                f"{point_cloud.timestamp:.4f} "
-                f"{ego_location.x:.4f} {ego_location.y:.4f} {ego_location.z:.4f} "
-                f"{qx:.4f} {qy:.4f} {qz:.4f} {qw:.4f}\n"
-            )
+        timestamp = point_cloud.timestamp
+        # Save the vehicle pose to a file in TUM format
+        append_right_handed_tum_pose(ego_vehicle, timestamp, filename)
 
 def imu_callback(imu_data, data_dir):
     # Get current unix timestamp in ms as int
