@@ -397,3 +397,4 @@ if __name__ == '__main__':
     main()
 
 # TODO: remove unneded args and imports
+# lidar_save.py --data_dir <output dir> -s 5 --headless --sensor_tick 0.1 
