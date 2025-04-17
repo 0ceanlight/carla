@@ -57,9 +57,10 @@ def euler_to_quaternion(roll, pitch, yaw):
 
     return (qx, qy, qz, qw)
 
-def append_right_handed_tum_pose(actor, timestamp, filename):
+def append_right_handed_tum_pose(transform, timestamp, filename):
         # Get the location of the vehicle
-        actor_location = actor.get_transform().location
+        location = transform.location
+        rotation = transform.rotation
 
         # Save the location to a file in TUM format
         # TUM format: timestamp tx ty tz qx qy qz qw
@@ -70,9 +71,9 @@ def append_right_handed_tum_pose(actor, timestamp, filename):
         # ALTERNATIVE: swap qx and qz to account for carla's left handed 
         # coordinate system, leave all else untouched
         qx, qy, qz, qw = euler_to_quaternion(
-            actor.get_transform().rotation.roll,
-            -actor.get_transform().rotation.pitch,
-            -actor.get_transform().rotation.yaw
+            rotation.roll,
+            -rotation.pitch,
+            -rotation.yaw
         )
 
         # Create directory if it doesn't exist
@@ -83,11 +84,8 @@ def append_right_handed_tum_pose(actor, timestamp, filename):
             # Save negative y to convert to right-handed coordinate system
             f.write(
                 f"{timestamp:.4f} "
-                f"{actor_location.x:.4f} {-actor_location.y:.4f} {actor_location.z:.4f} "
-                # f"{qx:.4f} {qy:.4f} {qz:.4f} {qw:.4f}\n"
-                f"{actor.get_transform().rotation.roll:.4f} "
-                f"{actor.get_transform().rotation.pitch:.4f} "
-                f"{actor.get_transform().rotation.yaw:.4f}\n"
+                f"{location.x:.4f} {-location.y:.4f} {location.z:.4f} "
+                f"{qx:.4f} {qy:.4f} {qz:.4f} {qw:.4f}\n"
             )
 
 def save_right_handed_ply(lidar_data, filename):
@@ -146,7 +144,7 @@ def ego_camera_callback(image, display, clock):
     display.blit(surface, (0, 0))
     clock.tick(30)
 
-def lidar_callback(point_cloud, data_dir, ego_vehicle=None):
+def lidar_callback(point_cloud, data_dir):
     # increment frame number
     global frame_counter
     frame_counter += 1
@@ -157,11 +155,10 @@ def lidar_callback(point_cloud, data_dir, ego_vehicle=None):
     # Save the point cloud to a file in PLY format
     save_right_handed_ply(point_cloud, ply_path)
 
-    if ego_vehicle is not None:
-        filename = os.path.join(data_dir, f'ground_truth_poses_tum.txt')
-        timestamp = point_cloud.timestamp
-        # Save the vehicle pose to a file in TUM format
-        append_right_handed_tum_pose(ego_vehicle, timestamp, filename)
+    filename = os.path.join(data_dir, f'ground_truth_poses_tum.txt')
+    timestamp = point_cloud.timestamp
+    # Save the vehicle pose to a file in TUM format
+    append_right_handed_tum_pose(point_cloud.transform, timestamp, filename)
 
 def imu_callback(imu_data, data_dir):
     # Get current unix timestamp in ms as int
@@ -258,7 +255,7 @@ def game_loop(args):
         lidar_rotation = carla.Rotation(0,0,0)
         lidar_transform = carla.Transform(lidar_location, lidar_rotation)
         ego_lidar = world.spawn_actor(lidar_bp, lidar_transform, attach_to=ego_vehicle)
-        ego_lidar.listen(lambda point_cloud: lidar_callback(point_cloud, args.data_dir, ego_vehicle))
+        ego_lidar.listen(lambda point_cloud: lidar_callback(point_cloud, args.data_dir))
 
         # consider NORTH to be the courthouse
         # west middle part of square
