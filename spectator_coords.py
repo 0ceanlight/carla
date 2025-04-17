@@ -39,7 +39,9 @@ def main():
 		t = world.get_spectator().get_transform()
 		# coordinate_str = "(x,y) = ({},{})".format(t.location.x, t.location.y)
 		coordinate_str = "(x,y,z) = ({},{},{})".format(t.location.x, t.location.y,t.location.z)
+		rotation_str = "(pitch,yaw,roll) = ({},{},{})".format(t.rotation.pitch, t.rotation.yaw,t.rotation.roll)
 		print (coordinate_str)
+		print (rotation_str)
 		time.sleep(_SLEEP_TIME_)
 
 
