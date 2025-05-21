@@ -1,11 +1,11 @@
 import math
 
-def quaternion_inverse(self, q):
+def quaternion_inverse(q):
     """Returns the inverse of a quaternion."""
     x, y, z, w = q
     return (-x, -y, -z, w)
 
-def quaternion_multiply(self, q1, q2):
+def quaternion_multiply(q1, q2):
     """Multiplies two quaternions q1 * q2."""
     x1, y1, z1, w1 = q1
     x2, y2, z2, w2 = q2
