@@ -1,4 +1,4 @@
-from utils.tum_sequence_comparator import show_all_differences, show_average_difference
+from utils.tum_file_comparator import show_all_differences, show_average_difference
 
 if __name__ == "__main__":
     # Paths to your TUM trajectory files

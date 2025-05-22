@@ -5,7 +5,6 @@ from .quaternion_utils import quaternion_inverse, quaternion_multiply
 from .tum_file_parser import load_tum_file
 
 
-# TODO: Not working! Has non-zero entries on some that SHOULD BE ZERO
 def quaternion_angle_difference(q1, q2):
     """
     Computes the absolute angular difference in degrees between two unit quaternions.
