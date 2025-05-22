@@ -44,3 +44,39 @@ def combine_point_clouds_with_offset_and_colors(cloud_params, out_file):
 
     o3d.io.write_point_cloud(out_file, combined_point_cloud)
     print(f"Combined point cloud saved to {out_file}")
+
+
+def combine_point_clouds_with_offset(cloud_params, out_file):
+    """
+    Combines multiple .ply files into one point cloud using absolute world coordinates and quaternions.
+    
+    Parameters:
+        cloud_params (list of dict): Each dict contains:
+            {
+                'file': str,
+                'pose': (x, y, z, qx, qy, qz, qw)
+            }
+        out_file (str): Output filename for the merged point cloud.
+    """
+    combined_point_cloud = o3d.geometry.PointCloud()
+
+    for cloud in cloud_params:
+        in_file = cloud['file']
+        x, y, z, qx, qy, qz, qw = cloud['pose']
+
+        pcd = o3d.io.read_point_cloud(in_file)
+        points = np.asarray(pcd.points)
+
+        # Convert quaternion to rotation matrix
+        rotation = R.from_quat([qx, qy, qz, qw]).as_matrix()
+
+        # Apply translation first, then rotation because the points are in absolute world coordinates
+        translated_points = points + np.array([x, y, z])
+        rotated_points = translated_points @ rotation.T
+
+        pcd.points = o3d.utility.Vector3dVector(rotated_points)
+
+        combined_point_cloud += pcd
+
+    o3d.io.write_point_cloud(out_file, combined_point_cloud)
+    print(f"Combined point cloud saved to {out_file}")
