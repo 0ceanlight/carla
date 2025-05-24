@@ -46,7 +46,7 @@ def combine_point_clouds_with_offset(cloud_params, out_file):
         if 'color' in cloud:
             color_r, color_g, color_b = cloud['color']
             # Set the color for all points
-            colors = np.full_like(rotated_points, (color_r / 255.0, color_g / 255.0, color_b / 255.0))
+            colors = np.full_like(transformed_points, (color_r / 255.0, color_g / 255.0, color_b / 255.0))
             pcd.colors = o3d.utility.Vector3dVector(colors)
 
         combined_point_cloud += pcd
