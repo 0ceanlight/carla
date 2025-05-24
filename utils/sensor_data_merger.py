@@ -2,8 +2,26 @@ import os
 import bisect
 from typing import List, Tuple, Dict, Optional
 from natsort import natsorted
+import numpy as np
+from scipy.spatial.transform import Rotation
 from .tum_file_parser import load_tum_file
 from .quaternion_utils import quaternion_inverse, quaternion_multiply
+from .merge_plys import combine_point_clouds_with_offset
+
+
+# TODO: for debugging only -----------------------------------------------------
+import random
+import colorsys
+
+def random_bright_color():
+  """Generates a random bright RGB color."""
+  h = random.random()
+  s = 1.0
+  v = 1.0
+  r, g, b = colorsys.hsv_to_rgb(h, s, v)
+  return (int(r * 255), int(g * 255), int(b * 255))
+# end for debugging only -------------------------------------------------------
+
 
 class SensorDataManager:
     """
@@ -141,7 +159,7 @@ class SensorDataManager:
         """
         return [i for i, match in enumerate(self.matched_frames) if None in match]
 
-    def get_match_for_ego_index(self, index: int) -> Optional[List[Optional[Tuple[str, Tuple]]]]:
+    def get_absolute_match_for_ego_index(self, index: int) -> Optional[List[Optional[Tuple[str, Tuple]]]]:
         """
         Retrieves the match data for a specific ego frame.
 
@@ -152,7 +170,17 @@ class SensorDataManager:
             Optional[List[Optional[Tuple[str, Tuple]]]]: List of matches or None.
         """
         if 0 <= index < len(self.matched_frames):
-            return self.matched_frames[index]
+            frame = self.matched_frames[index]
+            if frame is None:
+                return None
+            print("ABSOLUTE MATCH =================")
+            for match in frame:
+                _, match_tum_entry = match
+                print(match)
+
+            print(f"RETURNING (FROM ABS): {frame}")
+            return frame
+
         return None
 
     def get_all_matches(self) -> List[List[Optional[Tuple[str, Tuple]]]]:
@@ -162,7 +190,8 @@ class SensorDataManager:
         Returns:
             List[List[Optional[Tuple[str, Tuple]]]]: All match data.
         """
-        return self.matched_frames
+        # return self.matched_frames
+        return [self.get_absolute_match_for_ego_index(i) for i in range(len(self.matched_frames))]
 
     def get_relative_match_for_ego_index(self, index: int) -> Optional[List[Optional[Tuple[str, Tuple]]]]:
         """
@@ -179,21 +208,38 @@ class SensorDataManager:
             frame = self.matched_frames[index]
             if frame is None:
                 return None
-            ego_filename, ego_pose = frame[0]
-            relative_frame = [(ego_filename, (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0))]
+            ego_filename, ego_tum_entry = frame[0]
 
-            ego_translation = ego_pose[1:4]
-            ego_quat = ego_pose[4:]
+            ego_timestamp = ego_tum_entry[0]
+            ego_translation = ego_tum_entry[1:4]
+            ego_quat = ego_tum_entry[4:]
+
+            relative_frame = [(ego_filename, (ego_timestamp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0))]
 
             for match in frame[1:]:
                 if match is None:
                     relative_frame.append(None)
                 else:
-                    filename, pose = match
-                    rel_translation = tuple(p - e for p, e in zip(pose[1:4], ego_translation))
-                    rel_rotation = quaternion_multiply(quaternion_inverse(ego_quat), pose[4:])
-                    relative_pose = rel_translation + rel_rotation
-                    relative_frame.append((filename, relative_pose))
+                    match_filename, match_tum_entry = match
+                    match_timestamp = match_tum_entry[0]
+                    match_translation = match_tum_entry[1:4]
+                    match_quat = match_tum_entry[4:]
+
+                    print(f"RELATIVE_MATCH ====================")
+                    print(f"ego: \t{ego_tum_entry}")
+                    print(f"mat: \t{match_tum_entry}")
+                    # rel_translation = tuple(m - e for m, e in zip(match_translation, ego_translation))
+                    # rel_rotation = quaternion_multiply(quaternion_inverse(ego_quat), match_quat)
+
+                    delta = np.array(match_translation) - np.array(ego_translation)
+                    R_ego_inv = Rotation.from_quat(ego_quat).inv()
+                    rel_translation = tuple(R_ego_inv.apply(delta))
+                    rel_rotation = quaternion_multiply(quaternion_inverse(ego_quat), match_quat)
+
+                    relative_tum_entry = (match_timestamp,) + rel_translation + rel_rotation
+                    relative_frame.append((match_filename, relative_tum_entry))
+                    print(f"rel: \t{relative_tum_entry}")
+            print(f"RETURNING (FROM REL): {relative_frame}")
             return relative_frame
         return None
 
@@ -217,3 +263,73 @@ class SensorDataManager:
         print(f"Fully matched ego frames: {matched}")
         print(f"Partially/unmatched ego frames: {unmatched}")
 
+    def save_merged_ply_at_index(self, index: int, output_file: str, relative_match: bool = False, colored: bool = False):
+        """
+        Merges point clouds from the given index into a combined point cloud,
+        then saves this new point cloud to the given file 
+        'output_file'. 
+
+        For relative matches: The centers of the matched plys are at their 
+        respective absolute world coordinates (read from respective TUM files). 
+        This is the default mode.
+
+        For absolute matches: The ego ply origin remains at 0 0 0, and the other
+        plys are shifted relative to the absolute poses in their respective TUM
+        files.
+
+        Args:
+            output_point_cloud_file (str): Path to save the merged point cloud.
+            index (int): Index of the ego frame to merge.
+            relative_match (bool): If True, use relative matches instead of 
+                absolute.
+            colored (bool): If True, assign random colors to each point cloud 
+                for better differentiation (generally for debugging).
+        """
+        if relative_match:
+            match = self.get_relative_match_for_ego_index(index)
+        else:
+            match = self.get_absolute_match_for_ego_index(index)
+        if match:
+            clouds = []
+            for entry in match:
+                if entry is not None:
+                    filename, tum_entry = entry
+                    pose = tum_entry[1:]
+                    print(pose)
+                    clouds.append({
+                        'file': filename,
+                        'pose': pose,
+                    })
+                    if colored:
+                        color = random_bright_color()
+                        clouds[-1]['color'] = color
+            combine_point_clouds_with_offset(clouds, output_file)
+            
+        else:
+            print(f"No match found for ego frame {index}.")
+
+    def save_all_merged_plys(self, output_dir: str, relative_match: bool = False):
+        """
+        Merges all point cloud matches to their respective combined point 
+        clouds, then saves these new point cloud frames to the given directory 
+        'output_dir'. The filenames of this new point cloud sequence are 0.ply,
+        1.ply, 2.ply, etc. (according to the indices). The centers of the 
+        matched plys are at their respective absolute world coordinates (read
+        from respective TUM files).
+
+        For relative matches: The centers of the matched plys are at their 
+        respective absolute world coordinates (read from respective TUM files). 
+        This is the default mode.
+
+        For absolute matches: The ego ply origin remains at 0 0 0, and the other
+        plys are shifted relative to the absolute poses in their respective TUM
+        files.
+
+        Args:
+            output_dir (str): Directory to save the merged point clouds.
+            relative_match (bool): If True, use relative matches instead of absolute.
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        for index in range(len(self.matched_frames)):
+            output_file = os.path.join(output_dir, f"{index}.ply")
+            self.save_merged_ply_at_index(index, output_file, relative_match=relative_match)
