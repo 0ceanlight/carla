@@ -7,7 +7,7 @@ if __name__ == "__main__":
     # Example setup
     base_directory = "output_v1.log/sensor_captures_v3"
     sensors = ["ego_lidar", "infrastruct_lidar"]
-    max_discrepancy = 1.0  # seconds
+    max_discrepancy = 0.2  # seconds
 
     # Initialize the data manager
     manager = SensorDataManager(base_dir=base_directory, sensors=sensors, max_timestamp_discrepancy=max_discrepancy)
@@ -16,17 +16,26 @@ if __name__ == "__main__":
     print("=== Matching Summary ===")
     manager.summary()
 
+# after this, use the following command to start PIN_SLAM, making sure to modify your/merged/sensor/output/path
+# xhost local:root && docker run -it --rm -e SDL_VIDEODRIVER=x11 -e DISPLAY=$DISPLAY --env='DISPLAY' --ipc host --privileged --network host -p 8080:8081  --gpus all \
+# -v /tmp/.X11-unix:/tmp/.X11-unix:rw  \
+# -v your/merged/sensor/output/path:/storage/  \
+# pinslam:localbuild xfce4-terminal --title=PIN-SLAM
+
+
+# Then within PIN_SLAM, run the algorithm
+# python3 pin_slam.py -i /storage/path/to/merged/frame/dir -vsm -o /storage/your/merged/sensor/path/to/store/results
+
 # TESTING ALL MATCHES WITH SENSOR_DATA_MERGER MERGING FUNCS --------------------
 
-frame = 57
+# frame = 57
 
-# TODO: dis a problem child
-manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combined_with_colors_v4.ply', relative_match=False, colored=True)
+# manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combined_with_colors_v7.ply', relative_match=False, colored=True)
 
-manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combined_with_colors_v5.ply', relative_match=True, colored=True)
+# manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combined_with_colors_v6.ply', relative_match=True, colored=True)
 
 # manager.save_all_merged_plys("test_merger.log/out_frames_abs_v0/", relative_match=False)
-# manager.save_all_merged_plys("test_merger.log/out_frames_rel_v0/", relative_match=True)
+manager.save_all_merged_plys("test_merger.log/sensor_captures_v3/merged_frames/", relative_match=True)
 
 # TESTING SINGLE MATCHES W/ MANUAL MERGING -------------------------------------
 
@@ -114,3 +123,4 @@ manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combine
 #         print(f"\nUnmatched ego frame indices: {unmatched_indices}")
 #     else:
 #         print("\nAll ego frames have matches from all sensors.")
+

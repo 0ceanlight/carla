@@ -245,5 +245,5 @@ def show_average_difference(file1: str, file2: str) -> None:
     aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
     differences = compute_differences(aligned_seq1, aligned_seq2)
     avg_trans_diff, avg_rot_diff = compute_average_difference(differences)
-    print(f"Average Translation Difference: {avg_trans_diff:.6f}")
-    print(f"Average Rotation Difference (deg): {avg_rot_diff:.6f}")
+    print(f"Average Translation Difference (meters): {avg_trans_diff:.6f}m")
+    print(f"Average Rotation Difference (degrees): {avg_rot_diff:.6f}°")
