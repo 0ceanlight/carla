@@ -34,6 +34,9 @@ class SensorDataManager:
         sensor_data (Dict[str, List[Tuple]]): Parsed TUM entries for each sensor.
         sensor_filenames (Dict[str, List[str]]): Corresponding sorted .ply filenames for each sensor.
         matched_frames (List[List[Optional[Tuple[str, Tuple]]]]): Matched frames across sensors.
+            The outer list contains entries for each ego frame.
+            The inner list contains that frame's matches for each other sensor.
+            Each match is a tuple of (filename, timestamp, pose) or None if no match was found.
     """
 
     def __init__(self, base_dir: str, sensors: List[str], max_timestamp_discrepancy: float = 1.0):
@@ -167,7 +170,9 @@ class SensorDataManager:
             index (int): Index of the ego frame.
 
         Returns:
-            Optional[List[Optional[Tuple[str, Tuple]]]]: List of matches or None.
+            Optional[List[Optional[Tuple[str, Tuple]]]]: List of matches from 
+                each other sensor. Each match is a tuple of 
+                (filename, timestamp, pose) or None if no match was found.
         """
         if 0 <= index < len(self.matched_frames):
             frame = self.matched_frames[index]
@@ -189,6 +194,9 @@ class SensorDataManager:
 
         Returns:
             List[List[Optional[Tuple[str, Tuple]]]]: All match data.
+                The outer list contains entries for each ego frame.
+                The inner list contains that frame's matches for each other sensor.
+                Each match is a tuple of (filename, timestamp, pose) or None if no match was found.
         """
         # return self.matched_frames
         return [self.get_absolute_match_for_ego_index(i) for i in range(len(self.matched_frames))]
@@ -202,7 +210,9 @@ class SensorDataManager:
             index (int): Index of the ego frame.
 
         Returns:
-            Optional[List[Optional[Tuple[str, Tuple]]]]: List of relative matches or None.
+            Optional[List[Optional[Tuple[str, Tuple]]]]: List of matches from 
+                each other sensor. Each match is a tuple of 
+                (filename, timestamp, pose) or None if no match was found.
         """
         if 0 <= index < len(self.matched_frames):
             frame = self.matched_frames[index]
@@ -249,6 +259,9 @@ class SensorDataManager:
 
         Returns:
             List[List[Optional[Tuple[str, Tuple]]]]: All relative match data.
+                The outer list contains entries for each ego frame.
+                The inner list contains that frame's matches for each other sensor.
+                Each match is a tuple of (filename, timestamp, pose) or None if no match was found.
         """
         return [self.get_relative_match_for_ego_index(i) for i in range(len(self.matched_frames))]
 
