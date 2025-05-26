@@ -1,6 +1,63 @@
 import open3d as o3d
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import logging
+
+
+def load_point_cloud(ply_path):
+    """
+    Loads a point cloud from a .ply file.
+    
+    Parameters:
+        ply_path (str): Path to the .ply file.
+    
+    Returns:
+        o3d.geometry.PointCloud: The loaded point cloud.
+    """
+    pcd = o3d.io.read_point_cloud(ply_path)
+    logging.debug(
+        f"Loaded point cloud from {ply_path} with {len(pcd.points)} points.")
+    return pcd
+
+
+def save_point_cloud(out_file, pcd):
+    """
+    Saves a point cloud to a .ply file.
+    
+    Parameters:
+        out_file (str): Output filename for the point cloud.
+        pcd (o3d.geometry.PointCloud): The point cloud to save.
+    """
+    o3d.io.write_point_cloud(out_file, pcd)
+    logging.debug(
+        f"Saved point cloud to {out_file} with {len(pcd.points)} points.")
+
+
+def transform_point_cloud(pcd, pose):
+    """
+    Transforms a point cloud using the given pose (translation and rotation).
+
+    Parameters:
+        pcd (o3d.geometry.PointCloud): The point cloud to transform.
+        pose (tuple): A tuple containing translation (x, y, z) and quaternion (qx, qy, qz, qw).
+    Returns:
+        o3d.geometry.PointCloud: The transformed point cloud.
+    """
+    x, y, z, qx, qy, qz, qw = pose
+
+    # Convert quaternion to rotation matrix
+    rotation = R.from_quat([qx, qy, qz, qw]).as_matrix()
+
+    # Apply rotation and translation
+    points = np.asarray(pcd.points)
+    rotated_points = points @ rotation.T
+    transformed_points = rotated_points + np.array([x, y, z])
+
+    # Update point cloud with transformed points
+    pcd.points = o3d.utility.Vector3dVector(transformed_points)
+
+    return pcd
+
 
 def combine_point_clouds_with_poses(cloud_params, out_file):
     """
@@ -23,26 +80,19 @@ def combine_point_clouds_with_poses(cloud_params, out_file):
 
     for cloud in cloud_params:
         in_file = cloud['file']
-        x, y, z, qx, qy, qz, qw = cloud['pose']
+        pose = cloud['pose']
 
-        pcd = o3d.io.read_point_cloud(in_file)
-        points = np.asarray(pcd.points)
+        pcd = load_point_cloud(in_file)
 
-        # Convert quaternion to rotation matrix
-        rotation = R.from_quat([qx, qy, qz, qw]).as_matrix()
+        # Apply the transformation
+        pcd = transform_point_cloud(pcd, pose)
 
-        # Apply rotation and translation
-        rotated_points = points @ rotation.T
-        transformed_points = rotated_points + np.array([x, y, z])
-        pcd.points = o3d.utility.Vector3dVector(transformed_points)
-
+        # If color is provided, apply it
         if 'color' in cloud:
-            color_r, color_g, color_b = cloud['color']
-            # Set the color for all points
-            colors = np.full_like(transformed_points, (color_r / 255.0, color_g / 255.0, color_b / 255.0))
-            pcd.colors = o3d.utility.Vector3dVector(colors)
+            color = cloud['color']
+            pcd.paint_uniform_color(np.array(color) / 255.0)
 
         combined_point_cloud += pcd
 
     o3d.io.write_point_cloud(out_file, combined_point_cloud)
-    print(f"Combined point cloud saved to {out_file}")
+    save_point_cloud(out_file, combined_point_cloud)
