@@ -1,6 +1,6 @@
 import os
 from utils.sensor_data_merger import SensorDataManager
-from utils.merge_plys import combine_point_clouds_with_offset
+from utils.merge_plys import combine_point_clouds_with_poses
 import open3d as o3d
 
 if __name__ == "__main__":

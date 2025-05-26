@@ -6,7 +6,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 from .tum_file_parser import load_tum_file
 from .quaternion_utils import quaternion_inverse, quaternion_multiply
-from .merge_plys import combine_point_clouds_with_offset
+from .merge_plys import combine_point_clouds_with_poses
 
 
 # TODO: for debugging only -----------------------------------------------------
@@ -303,7 +303,7 @@ class SensorDataManager:
                     if colored:
                         color = random_bright_color()
                         clouds[-1]['color'] = color
-            combine_point_clouds_with_offset(clouds, output_file)
+            combine_point_clouds_with_poses(clouds, output_file)
             
         else:
             print(f"No match found for ego frame {index}.")

@@ -2,7 +2,7 @@ import open3d as o3d
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-def combine_point_clouds_with_offset(cloud_params, out_file):
+def combine_point_clouds_with_poses(cloud_params, out_file):
     """
     Combines multiple .ply files into one point cloud using the given offset in 
     absolute world coordinates and quaternions. Also OPTIONALLY assigns colors 
@@ -31,17 +31,10 @@ def combine_point_clouds_with_offset(cloud_params, out_file):
         # Convert quaternion to rotation matrix
         rotation = R.from_quat([qx, qy, qz, qw]).as_matrix()
 
-        # Apply translation first, then rotation because the points are in 
-        # absolute world coordinates
-        # TODO: is this correct?
-        # translated_points = points + np.array([x, y, z])
-        # rotated_points = translated_points @ rotation.T
-        # pcd.points = o3d.utility.Vector3dVector(rotated_points)
-
+        # Apply rotation and translation
         rotated_points = points @ rotation.T
         transformed_points = rotated_points + np.array([x, y, z])
         pcd.points = o3d.utility.Vector3dVector(transformed_points)
-
 
         if 'color' in cloud:
             color_r, color_g, color_b = cloud['color']
