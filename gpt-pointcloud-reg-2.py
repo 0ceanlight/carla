@@ -40,8 +40,11 @@ def refine_registration(source, target, result_ransac, voxel_size):
 
 def main():
     # Load point clouds
-    source_file = "run.log/sensor_captures_v3/ego_lidar/lidar_frames/10969.ply"
-    target_file = "run.log/sensor_captures_v3/infrastruct_lidar/lidar_frames/10969.ply"
+    # source_file = "run.log/sensor_captures_v3/ego_lidar/lidar_frames/10969.ply"
+    # target_file = "run.log/sensor_captures_v3/infrastruct_lidar/lidar_frames/10969.ply"
+
+    source_file = "output_v1.log/sensor_captures_v3_cropped/ego_lidar/lidar_frames/10969.ply"
+    target_file = "output_v1.log/sensor_captures_v3_cropped/infrastruct_lidar/lidar_frames/10969.ply"
 
     source = o3d.io.read_point_cloud(source_file)
     target = o3d.io.read_point_cloud(target_file)
