@@ -1,3 +1,4 @@
+import os
 import open3d as o3d
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -28,6 +29,11 @@ def save_point_cloud(out_file, pcd):
         out_file (str): Output filename for the point cloud.
         pcd (o3d.geometry.PointCloud): The point cloud to save.
     """
+
+    dirname = os.path.dirname(out_file)
+
+    if dirname and not os.path.exists(dirname):
+        os.makedirs(dirname)
     o3d.io.write_point_cloud(out_file, pcd)
     logging.debug(
         f"Saved point cloud to {out_file} with {len(pcd.points)} points.")
