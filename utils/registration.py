@@ -3,6 +3,7 @@ import numpy as np
 from typing import List, Optional, Tuple
 import logging
 from .merge_plys import load_point_cloud, save_point_cloud, transform_point_cloud
+from .lidar_viewer import PointCloudViewer
 
 
 def preprocess_point_cloud(pcd, voxel_size):
@@ -165,4 +166,4 @@ if __name__ == "__main__":
     ]
 
     final_cloud = register_multiple_point_clouds(files_with_poses, voxel_size=1.0)
-    o3d.visualization.draw_geometries([final_cloud])
+    PointCloudViewer.from_pointcloud(final_cloud).run()
