@@ -26,7 +26,7 @@ def random_bright_color():
 # end for debugging only -------------------------------------------------------
 
 
-class SensorDataManager:
+class SensorDataMerger:
     """
     A class to manage and synchronize LIDAR sensor data and their associated TUM 
     pose files.
@@ -59,7 +59,7 @@ class SensorDataManager:
                  sensors: List[str],
                  max_timestamp_discrepancy: float = 1.0):
         """
-        Initialize the SensorDataManager.
+        Initialize the SensorDataMerger.
 
         Args:
             base_dir (str): Path to the base directory containing sensor folders.
