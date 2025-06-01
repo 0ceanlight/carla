@@ -1,5 +1,5 @@
 import os
-from utils.sensor_data_merger import SensorDataManager
+from utils.sensor_data_merger import SensorDataMerger
 from utils.merge_plys import combine_point_clouds_with_poses
 import open3d as o3d
 
@@ -10,7 +10,7 @@ if __name__ == "__main__":
     max_discrepancy = 0.2  # seconds
 
     # Initialize the data manager
-    manager = SensorDataManager(base_dir=base_directory, sensors=sensors, max_timestamp_discrepancy=max_discrepancy)
+    manager = SensorDataMerger(base_dir=base_directory, sensors=sensors, max_timestamp_discrepancy=max_discrepancy)
 
     # Print summary of matching status
     print("=== Matching Summary ===")
