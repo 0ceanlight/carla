@@ -106,7 +106,6 @@ def register_multiple_point_clouds(
             merged_cloud, next_cloud, ransac_result.transformation, voxel_size)
 
         # Apply the refined transformation to the next cloud
-        # TODO: should this actually be applied to source? change order?
         merged_cloud.transform(refined_result.transformation)
 
         # Merge the point clouds

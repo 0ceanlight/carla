@@ -6,7 +6,7 @@ import numpy as np
 import logging
 from scipy.spatial.transform import Rotation
 from .tum_file_parser import load_tum_file
-from .quaternion_utils import quaternion_inverse, quaternion_multiply
+from .math_utils import quaternion_inverse, quaternion_multiply
 from .merge_plys import combine_point_clouds_with_poses
 
 # TODO: for debugging only -----------------------------------------------------

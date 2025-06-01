@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from typing import List, Tuple, Optional
-from .quaternion_utils import quaternion_inverse, quaternion_multiply
+from .math_utils import quaternion_inverse, quaternion_multiply
 from .tum_file_parser import load_tum_file
 
 

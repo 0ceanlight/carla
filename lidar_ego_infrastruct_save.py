@@ -23,7 +23,7 @@ import sys
 import weakref
 import time
 
-from utils.quaternion_utils import euler_to_quaternion
+from utils.math_utils import euler_to_quaternion
 from utils.tum_file_parser import append_tum_file
 
 
