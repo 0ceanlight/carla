@@ -58,7 +58,7 @@ def register_multiple_point_clouds(
     Parameters:
         files_with_transforms: List of tuples, each (file_path, transform, color)
             where transform is (x, y, z, qx, qy, qz, qw) or None
-            color is (r, g, b) Values in [0, 255] or None
+            where color is (r, g, b) Values in [0, 255] or None
         voxel_size: for downsampling and registration precision
 
     Returns:
@@ -129,8 +129,9 @@ def register_and_save_multiple_point_clouds(
     Register multiple point clouds and save the merged result to a file.
     
     Parameters:
-        files_with_transforms: List of tuples, each (file_path, transform)
+        files_with_transforms: List of tuples, each (file_path, transform, color)
             where transform is (x, y, z, qx, qy, qz, qw) or None
+            where color is (r, g, b) Values in [0, 255] or None
         output_file: Path to save the merged point cloud
         voxel_size: for downsampling and registration precision
     """
@@ -146,8 +147,9 @@ def register_and_view_multiple_point_clouds(
     Register multiple point clouds and visualize the merged result.
     
     Parameters:
-        files_with_transforms: List of tuples, each (file_path, transform)
+        files_with_transforms: List of tuples, each (file_path, transform, color)
             where transform is (x, y, z, qx, qy, qz, qw) or None
+            where color is (r, g, b) Values in [0, 255] or None
         voxel_size: for downsampling and registration precision
     """
     merged_cloud = register_multiple_point_clouds(files_with_transforms, voxel_size)
