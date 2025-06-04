@@ -16,49 +16,42 @@ def quaternion_angle_difference(q1, q2):
     Returns:
         float: The absolute angular difference in degrees between q1 and q2.
     """
-    q_rel = quaternion_multiply(quaternion_inverse(q1), q2)
-    q_rel = normalize_quaternion(q_rel)
-    rot_diff_deg = quaternion_to_angle_degrees(q_rel)
+    # Normalize the quaternions to ensure they are unit quaternions
+    q1 = np.array(q1, dtype=np.float64)
+    q2 = np.array(q2, dtype=np.float64)
+    q1 = normalize_quaternion(q1)
+    q2 = normalize_quaternion(q2)
 
-    if rot_diff_deg > 180:
-        rot_diff_deg = 360 - rot_diff_deg
+    # Compute the dot product
+    dot = np.dot(q1, q2)
 
-    return rot_diff_deg
+    # Clamp the dot product to [-1, 1] to avoid numerical errors with arccos
+    dot = np.clip(dot, -1.0, 1.0)
 
+    # Compute the angular difference
+    angle_rad = 2 * np.arccos(abs(dot))  # abs(dot) handles the double-cover of quaternions
 
-def quaternion_to_angle_degrees(q: Tuple[float, float, float, float]) -> float:
-    """
-    Convert a quaternion to the angle (in degrees) it represents.
+    # Convert to degrees
+    angle_deg = np.degrees(angle_rad)
 
-    Args:
-        q (Tuple[float, float, float, float]): Quaternion (x, y, z, w)
-
-    Returns:
-        float: Rotation angle in degrees.
-    """
-    x, y, z, w = q
-    angle_rad = 2 * math.acos(max(min(w, 1.0), -1.0))
-    angle_deg = math.degrees(angle_rad)
     return angle_deg
 
 
-def normalize_quaternion(
-        q: Tuple[float, float, float,
-                 float]) -> Tuple[float, float, float, float]:
+# Takes numpy arrays as input and outpu
+def normalize_quaternion(q: np.ndarray) -> np.ndarray:
     """
     Normalize a quaternion to unit length.
 
     Args:
-        q (Tuple[float, float, float, float]): Quaternion (x, y, z, w)
+        q (np.ndarray): Quaternion represented as (x, y, z, w).
 
     Returns:
-        Tuple[float, float, float, float]: Normalized quaternion.
+        np.ndarray: Normalized quaternion.
     """
-    x, y, z, w = q
-    norm = math.sqrt(x**2 + y**2 + z**2 + w**2)
+    norm = np.linalg.norm(q)
     if norm == 0:
         raise ValueError("Cannot normalize a zero-length quaternion.")
-    return (x / norm, y / norm, z / norm, w / norm)
+    return q / norm
 
 
 def align_sequences(
