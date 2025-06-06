@@ -218,10 +218,11 @@ class SensorDataMerger:
         logging.error(f"Index {index} out of range for matched frames.")
         return None
 
+
     def get_all_matches(
             self) -> List[List[Optional[Tuple[str, float, Tuple]]]]:
         """
-        Returns all matched frame data.
+        Returns only frame data that has been matched across all sensors.
 
         Returns:
             List[List[Optional[Tuple[str, float, Tuple]]]]: All match data.
@@ -229,7 +230,22 @@ class SensorDataMerger:
                 The inner list contains that frame's matches for each other sensor.
                 Each match is a tuple of (filename, timestamp, pose) or None if no match was found.
         """
-        return self.matched_frames
+
+        return [frame for i, frame in enumerate(self.matched_frames) if i not in self.get_unmatched_indices()]
+
+
+    def get_all_data(
+        self) -> List[List[Optional[Tuple[str, float, Tuple]]]]:
+        """
+        Returns all data, including matched and unmatched frames.
+
+        Returns:
+            List[List[Optional[Tuple[str, float, Tuple]]]]: All match data.
+                The outer list contains entries for each ego frame.
+                The inner list contains that frame's matches for each other sensor.
+                Each match is a tuple of (filename, timestamp, pose) or None if no match was found.
+        """
+        return self.matched_frames 
 
     def get_relative_match_for_ego_index(
             self,
