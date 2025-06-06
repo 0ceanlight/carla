@@ -51,14 +51,14 @@ def refine_registration(source, target, initial_trans, voxel_size):
 
 
 def register_multiple_point_clouds(
-    files_with_transforms,
+    data,
     voxel_size: float = 1.0
 ) -> o3d.geometry.PointCloud:
     """
     Register multiple point clouds into one.
     
     Parameters:
-        files_with_transforms: List of tuples, each (file_path, transform, color)
+        data: List of tuples, each (file_path, transform, color)
             where transform is (x, y, z, qx, qy, qz, qw) or None
             where color is (r, g, b) Values in [0, 255] or None
         voxel_size: for downsampling and registration precision
@@ -69,7 +69,9 @@ def register_multiple_point_clouds(
             - transforms applied to each point cloud (list of 4x4 np arrays)
             - average fitness and inlier RMSE of the registrations (float)
     """
-    assert len(files_with_transforms) >= 2, "Need at least two point clouds for registration."
+    assert len(data) >= 2, "Need at least two point clouds for registration."
+    assert all(isinstance(d, tuple) and len(d) == 3 for d in data), \
+        "Each item in data must be a tuple (file_path, transform, color)."
 
     # Record transformations applied to each point cloud in an array
     transforms = []
@@ -78,7 +80,7 @@ def register_multiple_point_clouds(
     sum_fitness = 0.0
     sum_inlier_rmse = 0.0
 
-    base_file, base_pose, base_color = files_with_transforms[0]
+    base_file, base_pose, base_color = data[0]
 
     # Load the first point cloud
     merged_cloud = load_point_cloud(base_file)
@@ -94,7 +96,7 @@ def register_multiple_point_clouds(
         # Assign color if provided
         merged_cloud.paint_uniform_color(np.array(base_color) / 255.0)
 
-    for next_file, next_pose, next_color in files_with_transforms[1:]:
+    for next_file, next_pose, next_color in data[1:]:
         # Load the next point cloud
         next_cloud = load_point_cloud(next_file)
         if next_pose is not None:
@@ -146,8 +148,8 @@ def register_multiple_point_clouds(
     # merged_cloud.remove_radius_outlier(nb_points=16, radius=voxel_size * 2)  # Remove outliers
     # merged_cloud.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)  # Remove statistical outliers
 
-    avg_fitness = sum_fitness / (len(files_with_transforms) - 1)
-    avg_inlier_rmse = sum_inlier_rmse / (len(files_with_transforms) - 1)
+    avg_fitness = sum_fitness / (len(data) - 1)
+    avg_inlier_rmse = sum_inlier_rmse / (len(data) - 1)
 
     return (merged_cloud, transforms, avg_fitness, avg_inlier_rmse)
 
