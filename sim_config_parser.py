@@ -7,7 +7,7 @@ import carla
 
 
 class ConfigError(Exception):
-    """Raised when the actor configuration is invalid."""
+    """Raised when the simulation configuration is invalid."""
     pass
 
 
@@ -28,23 +28,25 @@ def _make_transform(location_str: str, rotation_str: Optional[str] = None) -> ca
 
 
 def _load_actor(config, section: str, base_output_dir: str) -> SimpleNamespace:
-    if not config.has_option(section, "location"):
-        raise ConfigError(f"[{section}] must have a 'location' field")
+    is_random_actor = section == "other_vehicles"
 
-    transform = _make_transform(
-        config.get(section, "location"),
-        config.get(section, "rotation") if config.has_option(section, "rotation") else None
-    )
+    if not is_random_actor:
+        if not config.has_option(section, "location"):
+            raise ConfigError(f"[{section}] must have a 'location' field")
+        location_str = config.get(section, "location")
+        rotation_str = config.get(section, "rotation") if config.has_option(section, "rotation") else None
+        transform = _make_transform(location_str, rotation_str)
+    else:
+        transform = None  # Randomized spawn → no transform
 
     data_dir = config.get(section, "data_dir")
     full_data_path = os.path.join(base_output_dir, data_dir)
 
     info = {
-        "transform": transform,
         "data_dir": full_data_path,
+        "transform": transform,
     }
 
-    # Add any optional metadata if present
     for opt_key in ["filter", "type", "n_vehicles"]:
         if config.has_option(section, opt_key):
             value = config.getint(section, opt_key) if opt_key == "n_vehicles" else config.get(section, opt_key)
@@ -74,9 +76,10 @@ def load_sim_config(path: str) -> SimpleNamespace:
         actors[section] = _load_actor(config, section, output_dir)
 
     return SimpleNamespace(
-        seed=seed,
-        n_ticks=n_ticks,
-        output_dir=output_dir,
+        general=SimpleNamespace(
+            seed=seed, 
+            n_ticks=n_ticks, 
+            output_dir=output_dir),
         **actors
     )
 
