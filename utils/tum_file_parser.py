@@ -1,4 +1,5 @@
 import os
+from .math_utils import euler_to_quaternion
 
 def load_tum_file(file_path):
     """
@@ -46,7 +47,7 @@ def save_tum_file(file_path, data):
                        f"{entry[4]:.6f} {entry[5]:.6f} {entry[6]:.6f} {entry[7]:.6f}\n")
 
 # function to append any number of poses (as optionally long list of tuples)
-def append_tum_file(file_path, *poses):
+def append_tum_poses(file_path, *poses):
     """
     Append multiple poses to a TUM RGB-D trajectory file.
 
@@ -66,6 +67,30 @@ def append_tum_file(file_path, *poses):
             # Write in TUM format: timestamp tx ty tz qx qy qz qw
             file.write(f"{pose[0]:.6f} {pose[1]:.6f} {pose[2]:.6f} {pose[3]:.6f} "
                        f"{pose[4]:.6f} {pose[5]:.6f} {pose[6]:.6f} {pose[7]:.6f}\n")
+
+def append_right_handed_tum_pose(filename, transform, timestamp):
+        # Get the location of the vehicle
+        location = transform.location
+        rotation = transform.rotation
+
+        # Save the location to a file in TUM format
+        # TUM format: timestamp tx ty tz qx qy qz qw
+        # where qx, qy, qz, qw are the quaternion components 
+        # quaternions will require conversion because carla uses pitch, roll, yaw
+        
+        # TODO: is -pitch, -yaw conversion correct?
+        # ALTERNATIVE: swap qx and qz to account for carla's left handed 
+        # coordinate system, leave all else untouched
+        qx, qy, qz, qw = euler_to_quaternion(
+            rotation.roll,
+            -rotation.pitch,
+            -rotation.yaw
+        )
+
+        x, y, z = location.x, location.y, location.z
+
+        # Save negative y to convert to right-handed coordinate system
+        append_tum_poses(filename, (timestamp, x, -y, z, qx, qy, qz, qw))
 
 # Example usage:
 # data = load_tum_file("trajectory.txt")

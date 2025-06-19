@@ -24,36 +24,13 @@ import weakref
 import time
 
 from utils.math_utils import euler_to_quaternion
-from utils.tum_file_parser import append_tum_file
+from utils.tum_file_parser import append_tum_poses, append_right_handed_tum_pose
 
 
 # ==============================================================================
 # -- Basic functions -----------------------------------------------------------
 # ==============================================================================
 
-def append_right_handed_tum_pose(transform, timestamp, filename):
-        # Get the location of the vehicle
-        location = transform.location
-        rotation = transform.rotation
-
-        # Save the location to a file in TUM format
-        # TUM format: timestamp tx ty tz qx qy qz qw
-        # where qx, qy, qz, qw are the quaternion components 
-        # quaternions will require conversion because carla uses pitch, roll, yaw
-        
-        # TODO: is -pitch, -yaw conversion correct?
-        # ALTERNATIVE: swap qx and qz to account for carla's left handed 
-        # coordinate system, leave all else untouched
-        qx, qy, qz, qw = euler_to_quaternion(
-            rotation.roll,
-            -rotation.pitch,
-            -rotation.yaw
-        )
-
-        x, y, z = location.x, location.y, location.z
-
-        # Save negative y to convert to right-handed coordinate system
-        append_tum_file(filename, (timestamp, x, -y, z, qx, qy, qz, qw))
 
 def save_right_handed_ply(lidar_data, filename):
     """
@@ -82,6 +59,7 @@ def save_right_handed_ply(lidar_data, filename):
         f.write('property float32 I\n')
         f.write('end_header\n')
         np.savetxt(f, points, fmt='%.4f %.4f %.4f %.4f', delimiter=' ')
+
 
 # ==============================================================================
 # -- Add PythonAPI for release mode --------------------------------------------
