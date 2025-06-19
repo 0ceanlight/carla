@@ -69,7 +69,7 @@ def load_global_config(path: str) -> SimpleNamespace:
             "image_size_y": int,
             "iso": float,
             "gamma": float,
-            "lens_flar_intensity": float,
+            "lens_flare_intensity": float,
             "sensor_tick": float,
             "shutter_speed": float,
         },
