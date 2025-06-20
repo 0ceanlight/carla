@@ -11,25 +11,23 @@ LiDAR to it. Both record to given data directories + TODO: infrastruct
 The vehicle is set to autopilot mode."""
 
 import argparse
-import collections
-import datetime
 import logging
-import numpy as np
 import numpy.random as random
 import os
-import pygame
 import re
 import sys
-import weakref
 import time
 
-from .spawn_actors import *
+from spawn_actors import *
 from utils.math_utils import euler_to_quaternion
 from utils.tum_file_parser import append_tum_poses
+from utils.misc import clear_directory
 from global_config_parser import load_global_config
 from sim_config_parser import load_sim_config
 
 sim_config = load_sim_config("sim_config_0.ini")
+# Clear output data directory
+clear_directory(sim_config.general.output_dir)
 
 # ==============================================================================
 # -- Basic functions -----------------------------------------------------------
@@ -77,6 +75,7 @@ def game_loop(args):
         client.set_timeout(60.0)
 
         world = client.get_world()
+        traffic_manager = client.get_trafficmanager()
 
         settings = world.get_settings()
         settings.synchronous_mode = True
@@ -107,14 +106,14 @@ def game_loop(args):
         global actor_list
 
         # AGENT
-        ego_vehicle = spawn_vehicles(
+        ego_vehicle = spawn_vehicle(
             world, 
             traffic_manager, 
             transform=sim_config.ego_vehicle.transform,
             filter=sim_config.ego_vehicle.filter, 
             type=sim_config.ego_vehicle.type,
             seed=sim_config.general.seed, 
-            number=1)[0]
+            number=1)
         actor_list.append(ego_vehicle)
 
         # OTHER CARS
@@ -144,11 +143,11 @@ def game_loop(args):
         # middle of square
         # Location(x=-51.755508, y=-1.344367, z=0.076584)
 
-        # INFRASTRUCT LIDAR SENSOR (SE)
+        # INFRASTRUCT LIDAR SENSOR (NE)
         actor_list.append(spawn_lidar(
-            sim_config.infrastruct_lidar.data_dir, 
+            sim_config.ne_lidar.data_dir, 
             world, 
-            sim_config.infrastruct_lidar.transform, 
+            sim_config.ne_lidar.transform, 
             attach_to=None))
 
 
@@ -163,6 +162,7 @@ def game_loop(args):
 
             # Synchronous mode tick
             world.tick()
+            logging.debug(f'Tick {tick_ctr} / {sim_config.general.n_ticks}')
             tick_ctr += 1
 
     finally:
@@ -204,12 +204,10 @@ def main():
 
     args = argparser.parse_args()
 
-    args.width, args.height = [int(x) for x in args.res.split('x')]
-
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)
 
-    logging.info('listening to server %s:%s', args.host, args.port)
+    logging.info('listening to server %s:%s', global_config.carla_world.host, global_config.carla_world.simulator_port)
 
     print(__doc__)
 
