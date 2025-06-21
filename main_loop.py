@@ -25,10 +25,6 @@ from utils.misc import clear_directory
 from global_config_parser import load_global_config
 from sim_config_parser import load_sim_config
 
-sim_config = load_sim_config("sim_config_0.ini")
-# Clear output data directory
-clear_directory(sim_config.general.output_dir)
-
 # ==============================================================================
 # -- Basic functions -----------------------------------------------------------
 # ==============================================================================
@@ -50,7 +46,6 @@ import carla
 # -- World ---------------------------------------------------------------------
 # ==============================================================================
 
-actor_list = []
 
 # ==============================================================================
 # -- Game Loop -----------------------------------------------------------------
@@ -63,6 +58,14 @@ def game_loop(args):
     ticking the agent and the world (if needed), etc.
     """
 
+    global_config = load_global_config("global_config.ini")
+    sim_config = load_sim_config("sim_config_0.ini")
+
+    # Clear output data directory
+    clear_directory(sim_config.general.output_dir)
+
+    # Keep track of actors and world to despawn at the end
+    actor_list = []
     world = None
 
     try:
@@ -75,6 +78,9 @@ def game_loop(args):
         client.set_timeout(60.0)
 
         world = client.get_world()
+        if world is None:
+            logging.critical("Failed to get CARLA world")
+            raise RuntimeError("Failed to get CARLA world")
         traffic_manager = client.get_trafficmanager()
 
         settings = world.get_settings()
@@ -101,9 +107,7 @@ def game_loop(args):
 
 
         # ACTORS ---------------------------------------------------------------
-
-        # keep tracking of actors to remove at the end
-        global actor_list
+        # Keep track of actors to despawn at the end
 
         # AGENT
         ego_vehicle = spawn_vehicle(
@@ -157,13 +161,13 @@ def game_loop(args):
         tick_ctr = 0
         while True:
             if tick_ctr >= sim_config.general.n_ticks:
-                logging.info('Finished capturing data. Exiting...')
+                logging.info('BOOM! Finished capturing data. Exiting...')
                 break
 
             # Synchronous mode tick
             world.tick()
-            logging.debug(f'Tick {tick_ctr} / {sim_config.general.n_ticks}')
             tick_ctr += 1
+            logging.info(f'TICK {tick_ctr} / {sim_config.general.n_ticks}')
 
     finally:
         logging.info('Cleaning up...')
@@ -205,6 +209,7 @@ def main():
     args = argparser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
+    print('Log level:', logging.getLevelName(log_level))
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)
 
     logging.info('listening to server %s:%s', global_config.carla_world.host, global_config.carla_world.simulator_port)

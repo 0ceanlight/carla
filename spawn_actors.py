@@ -232,9 +232,8 @@ def create_camera_callback(data_dir):
         )
 
         # Save the camera image to a file
-        image_path = os.path.join(camera_dir, f'{frame_number}.jpg')
-        with open(image_path, 'wb') as img_file:
-            img_file.write(camera_image.raw_data)
+        image_path = os.path.join(camera_dir, f'{frame_number}.png')
+        camera_image.save_to_disk(image_path)
 
         # number of seconds since Unix epoch, according to TUM format
         timestamp = time.time()
