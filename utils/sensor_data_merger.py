@@ -197,7 +197,8 @@ class SensorDataMerger:
             self,
             index: int) -> Optional[List[Optional[Tuple[str, float, Tuple]]]]:
         """
-        Retrieves the match data for a specific ego frame.
+        Retrieves the match data for a specific ego frame. Returns the absolute
+        pose matches in world coordinates from each other sensor.
 
         Args:
             index (int): Index of the ego frame.
@@ -252,7 +253,8 @@ class SensorDataMerger:
             index: int) -> Optional[List[Optional[Tuple[str, float, Tuple]]]]:
         """
         Retrieves the relative pose match data for a specific ego frame.
-        Ego sensor is at origin: (0, 0, 0, 0, 0, 0, 1)
+        Ego sensor is at origin: (0, 0, 0, 0, 0, 0, 1), and other sensor poses 
+        are shifted into the ego sensor's coordinate systems accordingly.
         
         Args:
             index (int): Index of the ego frame.
@@ -389,13 +391,13 @@ class SensorDataMerger:
         matched plys are at their respective absolute world coordinates (read
         from respective TUM files).
 
-        For relative matches: The centers of the matched plys are at their 
-        respective absolute world coordinates (read from respective TUM files). 
-        This is the default mode.
+        For absolute matches (relative_match = False): The centers of the 
+        matched plys are at their respective absolute world coordinates (read 
+        from respective TUM files). This is the default mode.
 
-        For absolute matches: The ego ply origin remains at 0 0 0, and the other
-        plys are shifted relative to the absolute poses in their respective TUM
-        files.
+        For absolute matches (relative_match = True): The ego ply origin remains
+        at 0 0 0, and the other point clouds are shifted into the ego point 
+        cloud coordinate system using the poses in their respective TUM files.
 
         Args:
             output_dir (str): Directory to save the merged point clouds.
