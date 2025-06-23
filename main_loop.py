@@ -177,6 +177,11 @@ def game_loop(args):
         while True:
             if tick_ctr >= sim_config.general.n_ticks:
                 logging.info('BOOM! Finished capturing data. Exiting...')
+                # wait until all sensors have finished saving data... 
+                # omitting this can lead to incomplete callbacks
+                if not args.no_save:
+                    logging.info('Waiting for sensors to finish saving data...')
+                    time.sleep(7.0)
                 break
 
             # Synchronous mode tick
