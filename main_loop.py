@@ -18,12 +18,11 @@ import re
 import sys
 import time
 
-from spawn_actors import *
 from utils.math_utils import euler_to_quaternion
 from utils.tum_file_parser import append_tum_poses
 from utils.misc import clear_directory
-from config.global_config_parser import load_global_config
-from config.sim_config_parser import load_sim_config
+import config.global_config_parser as global_config_parser
+import config.sim_config_parser as sim_config_parser
 
 # ==============================================================================
 # -- Basic functions -----------------------------------------------------------
@@ -57,9 +56,16 @@ def game_loop(args):
     Main loop of the simulation. It handles spawning/teardown of actors,
     ticking the agent and the world (if needed), etc.
     """
+    global_config_parser.init_config(args.global_config)
+    global_config = global_config_parser.get_config()
 
-    global_config = load_global_config("config/global_config.ini")
-    sim_config = load_sim_config("config/sim_config_0.ini")
+
+    sim_config_parser.init_config(args.sim_config)
+    sim_config = sim_config_parser.get_config()
+
+    # Requires config to be loaded first
+    from spawn_actors import spawn_vehicle, spawn_vehicles, spawn_camera, spawn_lidar
+
 
     # Keep track of actors and world to despawn at the end
     actor_list = []
@@ -79,6 +85,8 @@ def game_loop(args):
         except RuntimeError as e:
             logging.critical(f"Failed to get CARLA world: {e}. Is the CARLA server running?")
             raise RuntimeError("Failed to get CARLA world") from e
+
+        logging.info('Listening to server %s:%s', global_config.carla_world.host, global_config.carla_world.simulator_port)
 
         # Clear output data directory
         if not args.no_save:
@@ -211,14 +219,18 @@ def main():
     argparser.add_argument(
         '-n', '--no-save', action='store_true', dest='no_save',
         help='Don\'t save any data to disk, only run simulation')
-
+    argparser.add_argument(
+        '-g', '--global-config', type=str, default='config/global_config.ini',
+        help='Path to the global configuration file (default: config/global_config.ini)')
+    argparser.add_argument(
+        '-s', '--sim-config', type=str, default='config/sim_config_0.ini',
+        help='Path to the simulation configuration file (default: config/sim_config_0.ini)')
+        
     args = argparser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     print('Log level:', logging.getLevelName(log_level))
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)
-
-    logging.info('listening to server %s:%s', global_config.carla_world.host, global_config.carla_world.simulator_port)
 
     print(__doc__)
 

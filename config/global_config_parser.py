@@ -3,13 +3,25 @@ import os
 from types import SimpleNamespace
 from typing import Any, Callable, Dict
 
-
 class ConfigError(Exception):
     """Raised when the configuration is invalid."""
     pass
 
 
 def _cast(value: str, cast_type: Callable) -> Any:
+    """
+    Attempts to cast a string value to a specified type.
+
+    Args:
+        value: The raw string value to cast.
+        cast_type: A callable that converts the string to the desired type.
+
+    Returns:
+        The casted value.
+
+    Raises:
+        ConfigError: If the casting fails.
+    """
     try:
         return cast_type(value)
     except ValueError as e:
@@ -17,6 +29,20 @@ def _cast(value: str, cast_type: Callable) -> Any:
 
 
 def _validate_section(config: configparser.ConfigParser, section: str, expected: Dict[str, Callable]) -> SimpleNamespace:
+    """
+    Validates a config section against an expected schema and returns a SimpleNamespace.
+
+    Args:
+        config: The loaded configparser object.
+        section: The name of the section to validate.
+        expected: A dictionary mapping expected keys to their expected types.
+
+    Returns:
+        A SimpleNamespace containing the validated and casted values.
+
+    Raises:
+        ConfigError: If the section or keys are missing, or casting fails.
+    """
     if not config.has_section(section):
         raise ConfigError(f"Missing required section: [{section}]")
 
@@ -30,7 +56,53 @@ def _validate_section(config: configparser.ConfigParser, section: str, expected:
     return SimpleNamespace(**data)
 
 
-def load_global_config(path: str) -> SimpleNamespace:
+_config = None  # Global singleton instance
+
+
+def init_config(path: str):
+    """
+    Initializes the global configuration by loading and validating the config file.
+
+    Args:
+        path: Path to the config file.
+
+    Raises:
+        FileNotFoundError: If the config file does not exist.
+        ConfigError: If validation fails.
+    """
+    global _config
+    _config = _load_and_validate_config(path)
+
+
+def get_config() -> SimpleNamespace:
+    """
+    Returns the global configuration object.
+
+    Returns:
+        A SimpleNamespace containing all validated configuration sections.
+
+    Raises:
+        ConfigError: If config has not been initialized.
+    """
+    if _config is None:
+        raise ConfigError("Configuration not initialized. Call init_config(path) first.")
+    return _config
+
+
+def _load_and_validate_config(path: str) -> SimpleNamespace:
+    """
+    Loads and validates the config file at the given path.
+
+    Args:
+        path: Path to the .ini config file.
+
+    Returns:
+        A SimpleNamespace with nested namespaces for each validated section.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ConfigError: If any section or field is invalid.
+    """
     if not os.path.exists(path):
         raise FileNotFoundError(f"Config file not found: {path}")
 
@@ -86,11 +158,14 @@ def load_global_config(path: str) -> SimpleNamespace:
 
     return SimpleNamespace(**config_ns)
 
+# -----------------------------------
 # Example usage:
-# import carla_config_parser
-# 
-# config = carla_config_parser.load_config("path/to/your/config.ini")
-# 
-# print(config.carla_lidar.range)          # 80.0
-# print(config.carla_camera.image_size_x)  # 800
-# print(config.registration.voxel_size)    # 1.0
+
+# import config.global_config_parser as global_config_parser
+#
+# global_config_parser.init_config("config/config1.ini") # Can be omitted if already initialized
+# config = global_config_parser.get_config()
+#
+# print(config.carla_lidar.range)          # e.g. 80.0
+# print(config.carla_camera.image_size_x)  # e.g. 800
+# print(config.registration.voxel_size)    # e.g. 1.0

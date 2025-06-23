@@ -12,6 +12,18 @@ class ConfigError(Exception):
 
 
 def _parse_vector(s: str) -> list[float]:
+    """
+    Parses a comma-separated string into a list of floats.
+
+    Args:
+        s: A string like "1.0, 2.0, 3.0"
+
+    Returns:
+        A list of floats.
+
+    Raises:
+        ConfigError: If parsing fails.
+    """
     try:
         return [float(x.strip()) for x in s.split(',')]
     except ValueError:
@@ -19,15 +31,33 @@ def _parse_vector(s: str) -> list[float]:
 
 
 def _make_transform(location_str: str, rotation_str: Optional[str] = None) -> carla.Transform:
+    """
+    Creates a CARLA Transform object from location and optional rotation strings.
+
+    Args:
+        location_str: String of comma-separated floats for location.
+        rotation_str: Optional string of comma-separated floats for rotation.
+
+    Returns:
+        A carla.Transform object.
+    """
     loc = carla.Location(*_parse_vector(location_str))
-    if rotation_str:
-        rot = carla.Rotation(*_parse_vector(rotation_str))
-    else:
-        rot = carla.Rotation(0.0, 0.0, 0.0)
+    rot = carla.Rotation(*_parse_vector(rotation_str)) if rotation_str else carla.Rotation(0.0, 0.0, 0.0)
     return carla.Transform(loc, rot)
 
 
 def _load_actor(config, section: str, base_output_dir: str) -> SimpleNamespace:
+    """
+    Loads a vehicle or actor section from the config.
+
+    Args:
+        config: The configparser object.
+        section: The section name in the config file.
+        base_output_dir: The root directory for output data.
+
+    Returns:
+        A SimpleNamespace with actor properties.
+    """
     is_random_actor = section == "other_vehicles"
 
     if not is_random_actor:
@@ -55,7 +85,53 @@ def _load_actor(config, section: str, base_output_dir: str) -> SimpleNamespace:
     return SimpleNamespace(**info)
 
 
-def load_sim_config(path: str) -> SimpleNamespace:
+_sim_config = None  # Singleton instance
+
+
+def init_config(path: str):
+    """
+    Initializes the simulation config from the given path.
+
+    Args:
+        path: Path to the config.ini file.
+
+    Raises:
+        FileNotFoundError: If the file doesn't exist.
+        ConfigError: If parsing or validation fails.
+    """
+    global _sim_config
+    _sim_config = _load_sim_config(path)
+
+
+def get_config() -> SimpleNamespace:
+    """
+    Returns the initialized simulation config.
+
+    Returns:
+        A SimpleNamespace with `.general`, `.ego_vehicle`, etc.
+
+    Raises:
+        ConfigError: If config has not been initialized.
+    """
+    if _sim_config is None:
+        raise ConfigError("Simulation config not initialized. Call init_config(path) first.")
+    return _sim_config
+
+
+def _load_sim_config(path: str) -> SimpleNamespace:
+    """
+    Loads and validates the full simulation config file.
+
+    Args:
+        path: Path to the config.ini file.
+
+    Returns:
+        A SimpleNamespace containing simulation parameters and actor configs.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ConfigError: If required fields are missing or invalid.
+    """
     if not os.path.exists(path):
         raise FileNotFoundError(f"Config file not found: {path}")
 
@@ -77,16 +153,21 @@ def load_sim_config(path: str) -> SimpleNamespace:
 
     return SimpleNamespace(
         general=SimpleNamespace(
-            seed=seed, 
-            n_ticks=n_ticks, 
-            output_dir=output_dir),
+            seed=seed,
+            n_ticks=n_ticks,
+            output_dir=output_dir
+        ),
         **actors
     )
 
-# Example usage: 
-# from sim_config_parser import load_sim_config
-# config = load_sim_config("config.ini")
+# -----------------------------------
+# Example usage:
 
-# print(config.ego_vehicle.filter)  # "vehicle.dodge.charger"
-# print(config.ego_vehicle.type)    # "car"
-# print(config.ego_vehicle.transform.location)  # carla.Location(x=0.0, ...)
+# import sim_config_parser
+#
+# sim_config_parser.init_config("config/sim_config.ini") # Can be omitted if already initialized
+# config = sim_config_parser.get_config()
+#
+# print(config.ego_vehicle.filter)          # e.g. "vehicle.dodge.charger"
+# print(config.ego_vehicle.type)            # e.g. "car"
+# print(config.ego_vehicle.transform.location)  # e.g. carla.Location(x=0.0, y=0.0, z=0.0)
