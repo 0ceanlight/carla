@@ -61,9 +61,6 @@ def game_loop(args):
     global_config = load_global_config("global_config.ini")
     sim_config = load_sim_config("sim_config_0.ini")
 
-    # Clear output data directory
-    clear_directory(sim_config.general.output_dir)
-
     # Keep track of actors and world to despawn at the end
     actor_list = []
     world = None
@@ -77,7 +74,16 @@ def game_loop(args):
         # optional TODO: move timeout and delta seconds to global_config?
         client.set_timeout(60.0)
 
-        world = client.get_world()
+        try:
+            world = client.get_world()
+        except RuntimeError as e:
+            logging.critical(f"Failed to get CARLA world: {e}. Is the CARLA server running?")
+            raise RuntimeError("Failed to get CARLA world") from e
+
+        # Clear output data directory
+        if not args.no_save:
+            clear_directory(sim_config.general.output_dir)
+
         if world is None:
             logging.critical("Failed to get CARLA world")
             raise RuntimeError("Failed to get CARLA world")
@@ -109,6 +115,8 @@ def game_loop(args):
         # ACTORS ---------------------------------------------------------------
         # Keep track of actors to despawn at the end
 
+        # TODO: make these fit to individual simulation configs
+
         # AGENT
         ego_vehicle = spawn_vehicle(
             world, 
@@ -117,7 +125,8 @@ def game_loop(args):
             filter=sim_config.ego_vehicle.filter, 
             type=sim_config.ego_vehicle.type,
             seed=sim_config.general.seed, 
-            number=1)
+            project_to_road=True,
+            lane_type=carla.LaneType.Driving)
         actor_list.append(ego_vehicle)
 
         # OTHER CARS
@@ -127,32 +136,30 @@ def game_loop(args):
             seed=sim_config.general.seed, 
             number=sim_config.other_vehicles.n_vehicles)
 
-        # EGO CAMERA
-        actor_list.append(spawn_camera(
-            sim_config.ego_camera.data_dir, 
-            world, 
-            sim_config.ego_camera.transform, 
-            attach_to=ego_vehicle))
+        # Only spawn sensors if data saving is enabled
+        if not args.no_save:
+            # EGO CAMERA
+            actor_list.append(spawn_camera(
+                sim_config.ego_camera.data_dir, 
+                world, 
+                sim_config.ego_camera.transform, 
+                attach_to=ego_vehicle))
 
-        # EGO LIDAR SENSOR
-        actor_list.append(spawn_lidar(
-            sim_config.ego_lidar.data_dir, 
-            world, 
-            sim_config.ego_lidar.transform, 
-            attach_to=ego_vehicle))
+            # EGO LIDAR SENSOR
+            actor_list.append(spawn_lidar(
+                sim_config.ego_lidar.data_dir, 
+                world, 
+                sim_config.ego_lidar.transform, 
+                attach_to=ego_vehicle))
 
-        # consider NORTH to be the courthouse
-        # west middle part of square
-        # Location(x=-52.452820, y=22.877516, z=0.045138)
-        # middle of square
-        # Location(x=-51.755508, y=-1.344367, z=0.076584)
-
-        # INFRASTRUCT LIDAR SENSOR (NE)
-        actor_list.append(spawn_lidar(
-            sim_config.ne_lidar.data_dir, 
-            world, 
-            sim_config.ne_lidar.transform, 
-            attach_to=None))
+            # INFRASTRUCT LIDAR SENSORS
+            infrastruct_lidar_sensors = [sim_config.ne_lidar, sim_config.se_lidar, sim_config.sw_lidar, sim_config.nw_lidar]
+            for lidar in infrastruct_lidar_sensors:
+                actor_list.append(spawn_lidar(
+                    lidar.data_dir, 
+                    world, 
+                    lidar.transform, 
+                    attach_to=None))
 
 
         # LOOP -----------------------------------------------------------------
@@ -202,9 +209,8 @@ def main():
         '-v', '--verbose', action='store_true', dest='debug',
         help='Print debug information')
     argparser.add_argument(
-        '--data_dir',
-        help='Directory to save sensor data and ground truth poses')
-    # TODO: add argument for which simulation to run
+        '-n', '--no-save', action='store_true', dest='no_save',
+        help='Don\'t save any data to disk, only run simulation')
 
     args = argparser.parse_args()
 

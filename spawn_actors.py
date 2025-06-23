@@ -11,6 +11,7 @@ import os
 import logging
 import time
 import shutil
+import carla
 
 from utils.tum_file_parser import append_right_handed_tum_pose
 from utils.misc import clear_directory
@@ -18,13 +19,59 @@ from utils.misc import clear_directory
 from global_config_parser import load_global_config
 global_config = load_global_config('global_config.ini')
 
+def valid_spawn_transform(world, transform, lane_type=carla.LaneType.Any):
+    """
+    Projects the given transform to the nearest valid spawn point on the road
+
+    Note that the following values are set to fixed standard values for valid spawns:
+    - Z coordinate: 0.6
+    - pitch: 0.0
+    - roll: 0.0
+
+    X and Y are taken from the given transform, but projected to specified lane type.
+    Yaw is taken as-is from the given transform (free choice of direction).
+
+    Args:
+        world (carla.World): The CARLA world object
+        lane_type (carla.LaneType): The type of lane to project to. Available lane types: https://carla.readthedocs.io/en/latest/python_api/#carla.LaneType
+        transform (carla.Transform): The transform to project
+    Returns:
+        carla.Transform: A valid spawn point transform projected to the road
+    """
+    # map-specific z coordinate that avoids collision (with ground, for example) at spawn
+    fixed_z = 0.6
+    fixed_pitch = 0.0
+    fixed_roll = 0.0
+
+    waypoint = world.get_map().get_waypoint(transform.location, project_to_road=True, lane_type=lane_type)
+
+    if waypoint == None:
+        raise RuntimeError(f'no valid spawn position found near given coordinates with LaneType={lane_type}')
+
+    spawn_point = carla.Transform(
+        carla.Location(x=waypoint.transform.location.x, 
+                       y=waypoint.transform.location.y, 
+                       z=fixed_z),
+        carla.Rotation(pitch=fixed_pitch, 
+                       roll=fixed_roll, 
+                       yaw=transform.rotation.yaw)
+    )
+
+    return spawn_point
 
 def _try_get_spawn_points(world, number=1, seed=None):
     """
-    Get a list of spawn points from the CARLA world.
-    :param world: The CARLA world object
-    :param n_points: Number of spawn points to return
-    :return: List of spawn points
+    Get a list of spawn points from the CARLA world. 
+    
+    If the number of requested spawn points is less than the available spawn points, a warning is logged and all available spawn points are returned. If no spawn points are available, a critical error is logged and an empty list is returned.
+
+    Args:
+        world (carla.World): The CARLA world object
+        number (int): Number of spawn points to return
+        seed (int, optional): Random seed for reproducibility
+
+    Returns:    
+        list: A list of spawn points (carla.Transform objects)
     """
     if seed is not None:
         random.seed(seed)
@@ -55,12 +102,18 @@ def _try_get_spawn_points(world, number=1, seed=None):
 def _try_get_random_vehicles(world, number=1, filter="vehicle.*.*", type="car", seed=None):
     """
     Get a list of random vehicles from the CARLA world.
-    :param world: The CARLA world object
-    :param n_vehicles: Number of vehicles to return
-    :param filter: Blueprint filter for vehicles
-    :param type: Type of vehicle to spawn
-    :param seed: Random seed for reproducibility
-    :return: List of spawned vehicle actors
+
+    If the number of requested vehicles is less than the available blueprints, a warning is logged and all available blueprints are returned. If no blueprints are available, a critical error is logged and an empty list is returned.
+
+    Args:
+        world (carla.World): The CARLA world object
+        number (int): Number of vehicles to return
+        filter (str): Blueprint filter for vehicles
+        type (str): Type of vehicle to spawn (e.g., "car")
+        seed (int, optional): Random seed for reproducibility
+
+    Returns:
+        list: A list of vehicle blueprints (carla.Blueprint objects)
     """
     if seed is not None:
         random.seed(seed)
@@ -82,7 +135,25 @@ def _try_get_random_vehicles(world, number=1, filter="vehicle.*.*", type="car", 
     return random.choice(vehicle_bps, size=number).tolist()
 
 
-def _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager):
+def _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=False, lane_type=carla.LaneType.Any):
+    """
+    Attempts to spawn a vehicle in the CARLA world at the specified transform.
+    If the vehicle cannot be spawned, a critical error is logged and None is returned.
+
+    Args:
+        world (carla.World): The CARLA world object
+        vehicle_bp (carla.Blueprint): The vehicle blueprint to spawn
+        transform (carla.Transform): The transform to spawn the vehicle at
+        traffic_manager (carla.TrafficManager): The traffic manager object
+        project_to_road (bool): Whether to project the spawn point to the road
+        lane_type (carla.LaneType): The type of lane to project to (if project_to_road is True)
+    Returns:
+        carla.Actor: The spawned vehicle actor, or None if spawning failed.
+    """
+    if project_to_road:
+        # Project the transform to the nearest valid spawn point on the road
+        transform = valid_spawn_transform(world, transform, lane_type)
+
     vehicle = world.try_spawn_actor(vehicle_bp, transform)
     if vehicle is None:
         logging.critical(f"Vehicle {vehicle_bp.id} could not be spawned at location {transform}")
@@ -90,7 +161,7 @@ def _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager):
     # Set to automatic control
     vehicle.set_autopilot(True, traffic_manager.get_port())
     traffic_manager.update_vehicle_lights(vehicle, True)
-    logging.debug(f"Vehicle {vehicle_bp.id} was spawned at {transform.location}")
+    logging.debug(f"Vehicle {vehicle_bp.id} was spawned at {transform.location} and {transform.rotation}")
     return vehicle
 
 
@@ -320,7 +391,9 @@ def spawn_vehicles(world,
                    filter="vehicle.*.*",
                    type="car",
                    seed=None,
-                   number=1):
+                   number=1,
+                   project_to_road=False,
+                   lane_type=carla.LaneType.Any):
     """
     Spawns vehicles in the CARLA world at specified transforms or random spawn points.
 
@@ -332,6 +405,8 @@ def spawn_vehicles(world,
         type (str): Type of vehicle to spawn (e.g., "car").
         seed (int): Random seed for reproducibility.
         number (int): Number of vehicles to spawn.
+        project_to_road (bool): Whether to project the spawn points to the road.
+        lane_type (carla.LaneType): The type of lane to project to (if project_to_road is True).
 
     Returns:
         list: A list of spawned vehicle actors.
@@ -351,7 +426,7 @@ def spawn_vehicles(world,
     vehicle_bps = _try_get_random_vehicles(world, number=number, filter=filter, type=type, seed=seed)
 
     for vehicle_bp, transform in zip(vehicle_bps, transforms):
-        vehicle = _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager)
+        vehicle = _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=project_to_road, lane_type=lane_type)
 
         if vehicle is not None:
             actor_list.append(vehicle)
@@ -366,7 +441,8 @@ def spawn_vehicle(world,
                    filter="vehicle.*.*",
                    type="car",
                    seed=None,
-                   number=1):
+                   project_to_road=False,
+                   lane_type=carla.LaneType.Any):
     """
     Spawns a single vehicle in the CARLA world at the specified transform random spawn point.
 
@@ -377,6 +453,8 @@ def spawn_vehicle(world,
         filter (str): Blueprint filter for the vehicle.
         type (str): Type of vehicle to spawn (e.g., "car").
         seed (int): Random seed for reproducibility.
+        project_to_road (bool): Whether to project the spawn point to the road.
+        lane_type (carla.LaneType): The type of lane to project to (if project_to_road is True).
     
     Returns:
         vehicle: The spawned vehicle actor, or None if spawning failed.
@@ -393,4 +471,4 @@ def spawn_vehicle(world,
         return None
     vehicle_bp = vehicle_bps[0]
 
-    return _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager)
+    return _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=project_to_road, lane_type=lane_type)
