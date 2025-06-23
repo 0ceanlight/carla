@@ -16,8 +16,8 @@ import carla
 from utils.tum_file_parser import append_right_handed_tum_pose
 from utils.misc import clear_directory
 
-from global_config_parser import load_global_config
-global_config = load_global_config('global_config.ini')
+from config.global_config_parser import load_global_config
+global_config = load_global_config('config/global_config.ini')
 
 def valid_spawn_transform(world, transform, lane_type=carla.LaneType.Any):
     """

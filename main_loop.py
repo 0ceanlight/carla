@@ -22,8 +22,8 @@ from spawn_actors import *
 from utils.math_utils import euler_to_quaternion
 from utils.tum_file_parser import append_tum_poses
 from utils.misc import clear_directory
-from global_config_parser import load_global_config
-from sim_config_parser import load_sim_config
+from config.global_config_parser import load_global_config
+from config.sim_config_parser import load_sim_config
 
 # ==============================================================================
 # -- Basic functions -----------------------------------------------------------
@@ -58,8 +58,8 @@ def game_loop(args):
     ticking the agent and the world (if needed), etc.
     """
 
-    global_config = load_global_config("global_config.ini")
-    sim_config = load_sim_config("sim_config_0.ini")
+    global_config = load_global_config("config/global_config.ini")
+    sim_config = load_sim_config("config/sim_config_0.ini")
 
     # Keep track of actors and world to despawn at the end
     actor_list = []
