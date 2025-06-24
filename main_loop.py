@@ -184,7 +184,7 @@ def game_loop(args):
                     max_wait_time = 60
                     while True:
                         # Verify whether the number of TUM entries (number of lines) and number of files is equal in each data dir
-                        # We know that the simulation is done when the number of files in the respective `frames` directory is equal to the number of lines in the `ground_truth_tum_poses.txt` file
+                        # We know that the simulation is done when the number of files in the respective `frames` directory is equal to the number of lines in the `ground_truth_poses_tum.txt` file
                         directories = [
                             sim_config.ego_camera.data_dir,
                             sim_config.ego_lidar.data_dir,
@@ -209,8 +209,8 @@ def game_loop(args):
                             num_files = len([f for f in os.listdir(frames_dir) if os.path.isfile(os.path.join(frames_dir, f))])
                             logging.debug(f"Number of files in {frames_dir}: {num_files}")
 
-                            # Count the number of lines in the `ground_truth_tum_poses.txt` file
-                            tum_file = os.path.join(directory, 'ground_truth_tum_poses.txt')
+                            # Count the number of lines in the `ground_truth_poses_tum.txt` file
+                            tum_file = os.path.join(directory, 'ground_truth_poses_tum.txt')
                             if not os.path.exists(tum_file):
                                 logging.warning(f"TUM file {tum_file} does not exist.")
                                 # Skip this sensor if the TUM file is missing
