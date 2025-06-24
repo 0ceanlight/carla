@@ -34,8 +34,8 @@ def refine_registration(source, target, initial_trans, voxel_size):
 
 # Using clouds centered at origin: ---------------------------------------------
 # # Input file paths
-# file_1 = "output_v1.log/sensor_captures_v3_cropped/ego_lidar/lidar_frames/10969.ply"
-# file_2 = "output_v1.log/sensor_captures_v3_cropped/infrastruct_lidar/lidar_frames/10969.ply"
+# file_1 = "output_v1.log/sensor_captures_v3_cropped/ego_lidar/frames/10969.ply"
+# file_2 = "output_v1.log/sensor_captures_v3_cropped/infrastruct_lidar/frames/10969.ply"
 
 # # Load point clouds
 # source = o3d.io.read_point_cloud(file_1)

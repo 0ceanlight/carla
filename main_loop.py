@@ -78,7 +78,7 @@ def game_loop(args):
         # WORLD ----------------------------------------------------------------
         client = carla.Client(global_config.carla_world.host, global_config.carla_world.simulator_port)
         # optional TODO: move timeout and delta seconds to global_config?
-        client.set_timeout(60.0)
+        client.set_timeout(15.0)
 
         try:
             world = client.get_world()
@@ -122,8 +122,6 @@ def game_loop(args):
 
         # ACTORS ---------------------------------------------------------------
         # Keep track of actors to despawn at the end
-
-        # TODO: make these fit to individual simulation configs
 
         # AGENT
         ego_vehicle = spawn_vehicle(
@@ -170,7 +168,7 @@ def game_loop(args):
                     attach_to=None))
 
 
-        # LOOP -----------------------------------------------------------------
+        # MAIN SIM LOOP --------------------------------------------------------
         logging.info(f'Running simulation for {sim_config.general.n_ticks} ticks...')
         global frame_counter
         tick_ctr = 0
@@ -181,8 +179,64 @@ def game_loop(args):
                 # omitting this can lead to incomplete callbacks
                 if not args.no_save:
                     logging.info('Waiting for sensors to finish saving data...')
-                    time.sleep(7.0)
-                break
+
+                    # Wait for up to 60 seconds for the sensors to finish saving data
+                    max_wait_time = 60
+                    while True:
+                        # Verify whether the number of TUM entries (number of lines) and number of files is equal in each data dir
+                        # We know that the simulation is done when the number of files in the respective `frames` directory is equal to the number of lines in the `ground_truth_tum_poses.txt` file
+                        directories = [
+                            sim_config.ego_camera.data_dir,
+                            sim_config.ego_lidar.data_dir,
+                            sim_config.ne_lidar.data_dir,
+                            sim_config.se_lidar.data_dir,
+                            sim_config.sw_lidar.data_dir,
+                            sim_config.nw_lidar.data_dir
+                        ]
+
+                        finished = True
+                        for directory in directories:
+                            if not os.path.exists(directory):
+                                logging.warning(f"Directory {directory} does not exist.")
+                                continue
+
+                            # Count the number of files in the `frames` directory
+                            frames_dir = os.path.join(directory, 'frames')
+                            if not os.path.exists(frames_dir):
+                                logging.warning(f"Frames directory {frames_dir} does not exist.")
+                                # Skip this sensor if the frames directory is missing
+                                continue
+                            num_files = len([f for f in os.listdir(frames_dir) if os.path.isfile(os.path.join(frames_dir, f))])
+                            logging.debug(f"Number of files in {frames_dir}: {num_files}")
+
+                            # Count the number of lines in the `ground_truth_tum_poses.txt` file
+                            tum_file = os.path.join(directory, 'ground_truth_tum_poses.txt')
+                            if not os.path.exists(tum_file):
+                                logging.warning(f"TUM file {tum_file} does not exist.")
+                                # Skip this sensor if the TUM file is missing
+                                continue # Sensor directories loop
+                            with open(tum_file, 'r') as f:
+                                num_lines = sum(1 for line in f if line.strip() and not line.startswith('#'))
+                            logging.debug(f"Number of lines in {tum_file}: {num_lines}")
+
+                            if num_files != num_lines:
+                                finished = False
+                                logging.debug(f"Number of files ({num_files}) does not match number of lines ({num_lines}) in {tum_file}. Waiting for sensors to finish saving data...")
+                        # Loop post condition: If all numbers are equal, finished = True else False
+
+                        if finished:
+                            logging.info('All sensors finished saving data.')
+                            break # Wait time loop
+                        elif max_wait_time <= 0:
+                            logging.warning('Max wait time reached. Exiting...')
+                            break # Wait time loop
+                        else:
+                            logging.info(f'Waiting for sensors to finish saving data... {max_wait_time} seconds left.')
+                            time.sleep(1)
+                            max_wait_time -= 1
+
+                break # Main sim loop
+            # END MAIN SIM LOOP ----------------------------------------------------
 
             # Synchronous mode tick
             world.tick()
@@ -233,6 +287,7 @@ def main():
         
     args = argparser.parse_args()
 
+    # Set up logging
     log_level = logging.DEBUG if args.debug else logging.INFO
     print('Log level:', logging.getLevelName(log_level))
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)

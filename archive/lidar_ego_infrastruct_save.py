@@ -98,7 +98,7 @@ def lidar_callback(point_cloud, data_dir):
 
     print(f"Saving LiDAR data for: {frame_number}, point count: {(point_cloud)}")
 
-    ply_path = os.path.join(data_dir, 'lidar_frames', f'{frame_number}.ply')
+    ply_path = os.path.join(data_dir, 'frames', f'{frame_number}.ply')
     # Save the point cloud to a file in PLY format
     save_right_handed_ply(point_cloud, ply_path)
 

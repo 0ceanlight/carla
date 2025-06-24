@@ -57,8 +57,8 @@ dz = 7.6 - 2.5857
 
 # Combine point clouds with offsets and colors
 combine_point_clouds_with_offset_and_colors(
-    'run.log/sensor_captures_v1/ego_lidar/lidar_frames/1.ply', 0.0, 0.0, 0.0, 255, 0, 0,  # Offset (1,0,0) and color red
-    'run.log/sensor_captures_v1/infrastruct_lidar/lidar_frames/2.ply', dx, -dy, dz, 0, 255, 0,  # Offset (0,1,0) and color green
+    'run.log/sensor_captures_v1/ego_lidar/frames/1.ply', 0.0, 0.0, 0.0, 255, 0, 0,  # Offset (1,0,0) and color red
+    'run.log/sensor_captures_v1/infrastruct_lidar/frames/2.ply', dx, -dy, dz, 0, 255, 0,  # Offset (0,1,0) and color green
     # 'in_file_3.ply', 0.0, 0.0, 1.0, 0, 0, 255,  # Offset (0,0,1) and color blue
     out_file='out_combined_with_colors.ply'
 )

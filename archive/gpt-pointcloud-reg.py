@@ -7,8 +7,8 @@ def load_point_cloud(ply_path):
     pcd = o3d.io.read_point_cloud(ply_path)
     return np.asarray(pcd.points)
 
-source_file = "run.log/sensor_captures_v3/ego_lidar/lidar_frames/10969.ply"
-target_file = "run.log/sensor_captures_v3/infrastruct_lidar/lidar_frames/10969.ply"
+source_file = "run.log/sensor_captures_v3/ego_lidar/frames/10969.ply"
+target_file = "run.log/sensor_captures_v3/infrastruct_lidar/frames/10969.ply"
 
 source_points = load_point_cloud(source_file)
 target_points = load_point_cloud(target_file)

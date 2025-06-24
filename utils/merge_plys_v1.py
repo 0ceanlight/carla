@@ -54,13 +54,13 @@ dz = 7.6 - 2.5857
 
 clouds = [
     {
-        'file': 'run.log/sensor_captures_v1/ego_lidar/lidar_frames/1.ply',
+        'file': 'run.log/sensor_captures_v1/ego_lidar/frames/1.ply',
         'offset': (0.0, 0.0, 0.0),
         'quaternion': (0, 0, 0, 1),
         'color': (255, 0, 0)
     },
     {
-        'file': 'run.log/sensor_captures_v1/infrastruct_lidar/lidar_frames/2.ply',
+        'file': 'run.log/sensor_captures_v1/infrastruct_lidar/frames/2.ply',
         'offset': (dx, -dy, dz),
         'quaternion': (0, 0, 0, 1),
         'color': (0, 255, 0)

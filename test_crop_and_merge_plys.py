@@ -30,6 +30,6 @@ if __name__ == "__main__":
     sensors = [("ego_lidar", -1.2), ("infrastruct_lidar", -7.3)]
 
     for sensor, z_threshold in sensors:
-        input_dir = os.path.join(input_data_dir, sensor, "lidar_frames")
-        output_dir = os.path.join(output_data_dir, sensor, "lidar_frames")
+        input_dir = os.path.join(input_data_dir, sensor, "frames")
+        output_dir = os.path.join(output_data_dir, sensor, "frames")
         crop_all_plys(input_dir, output_dir, z_threshold=z_threshold)

@@ -211,9 +211,14 @@ def create_lidar_callback(data_dir):
                   - Saves the point cloud to a .ply file.
                   - Appends the vehicle pose to a TUM-format pose file.
     """
+
+    # Use simulation time added to base time. If we just use time.time() within
+    # the callback, the timestamps will not be consistent across different 
+    # sensors because simulation time is not synchronized with real time.
+    start_time = time.time()
     frame_counter = 0
 
-    ply_dir = os.path.join(data_dir, 'lidar_frames')
+    ply_dir = os.path.join(data_dir, 'frames')
     os.makedirs(ply_dir, exist_ok=True)
 
     tum_file = os.path.join(data_dir, f'ground_truth_poses_tum.txt')
@@ -229,7 +234,7 @@ def create_lidar_callback(data_dir):
                          - transform (matrix or pose object): The vehicle's pose at this timestamp.
 
         Side Effects:
-            - Writes a PLY file for the point cloud to `<data_dir>/lidar_frames/<frame_number>.ply`.
+            - Writes a PLY file for the point cloud to `<data_dir>/frames/<frame_number>.ply`.
             - Appends a line to `<data_dir>/ground_truth_poses_tum.txt` in TUM pose format.
         """
 
@@ -248,8 +253,8 @@ def create_lidar_callback(data_dir):
         # Save the point cloud to a file in PLY format
         _save_right_handed_ply(point_cloud, ply_path)
 
-        # number of seconds since Unix epoch, according to TUM format
-        timestamp = time.time()
+        # Number of seconds since Unix epoch, according to TUM format
+        timestamp = start_time + point_cloud.timestamp
         # Save the vehicle pose to a file in TUM format
         append_right_handed_tum_pose(tum_file, point_cloud.transform,
                                      timestamp)
@@ -274,9 +279,13 @@ def create_camera_callback(data_dir):
                   - Appends the vehicle pose to a TUM-format pose file.
     """
 
+    # Use simulation time added to base time. If we just use time.time() within
+    # the callback, the timestamps will not be consistent across different 
+    # sensors because simulation time is not synchronized with real time.
+    start_time = time.time()
     frame_counter = 0
 
-    camera_dir = os.path.join(data_dir, 'camera_frames')
+    camera_dir = os.path.join(data_dir, 'frames')
     os.makedirs(camera_dir, exist_ok=True)
 
     tum_file = os.path.join(data_dir, f'ground_truth_poses_tum.txt')
@@ -293,7 +302,7 @@ def create_camera_callback(data_dir):
                           - raw_data (bytes): The raw image data.
 
         Side Effects:
-            - Saves the camera image to `<data_dir>/camera_frames/<frame_number>.jpg`.
+            - Saves the camera image to `<data_dir>/frames/<frame_number>.jpg`.
             - Appends a line to `<data_dir>/ground_truth_poses_tum.txt` in TUM pose format.
         """
 
@@ -311,8 +320,8 @@ def create_camera_callback(data_dir):
         image_path = os.path.join(camera_dir, f'{frame_number}.png')
         camera_image.save_to_disk(image_path)
 
-        # number of seconds since Unix epoch, according to TUM format
-        timestamp = time.time()
+        # Number of seconds since Unix epoch, according to TUM format
+        timestamp = start_time + camera_image.timestamp
         # Save the vehicle pose to a file in TUM format
         append_right_handed_tum_pose(tum_file, camera_image.transform,
                                      timestamp)

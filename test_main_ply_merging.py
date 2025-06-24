@@ -5,8 +5,9 @@ import open3d as o3d
 
 if __name__ == "__main__":
     # Example setup
-    base_directory = "output_v1.log/sensor_captures_v3"
-    sensors = ["ego_lidar", "infrastruct_lidar"]
+    base_directory = "build/sim_1_output"
+    sensors = ["ego_lidar", "ne_lidar", "se_lidar", "sw_lidar", "nw_lidar"]
+    sensors = ["ne_lidar", "se_lidar", "sw_lidar", "nw_lidar"]
     max_discrepancy = 0.2  # seconds
 
     # Initialize the data manager
@@ -29,15 +30,17 @@ if __name__ == "__main__":
 # TESTING ALL MATCHES WITH SENSOR_DATA_MERGER MERGING FUNCS --------------------
 
 # SINGLE FRAME
-frame = 57
+# frame = 57
 
-manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combined_with_colors_v7.ply', relative_match=False, colored=True)
+# manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combined_with_colors_v7.ply', relative_match=False, colored=True)
 
-manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combined_with_colors_v6.ply', relative_match=True, colored=True)
+# manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combined_with_colors_v6.ply', relative_match=True, colored=True)
 
 # ALL FRAMES
-# manager.save_all_merged_plys("test_merger.log/out_frames_abs_v0/", relative_match=False)
-# manager.save_all_merged_plys("test_merger.log/sensor_captures_v3/merged_frames/", relative_match=True)
+# manager.save_all_merged_plys("test_merger.log/out_frames_abs_v0/", relative_match=True)
+# manager.save_all_merged_plys("test_merger.log/sim_0_output/merged_frames/", relative_match=False)
+# manager.save_all_merged_plys("test_merger.log/sim_0_output_no_ego/merged_frames/", relative_match=False)
+manager.save_all_merged_plys("test_merger.log/sim_0_output_no_ego_v2/merged_frames/", relative_match=False)
 
 # TESTING SINGLE MATCHES W/ MANUAL MERGING -------------------------------------
 
@@ -88,17 +91,17 @@ manager.save_merged_ply_at_index(frame, output_file='test_merger.log/out_combine
 #         ]
 
 # # === 65th Frame Match ===
-# # Ego Frame 65: [('run.log/sensor_captures_v3/ego_lidar/lidar_frames/10975.ply', (139.952, -52.4286, -33.9597, 2.0592, -0.0032, -0.0022, -0.7027, 0.7114)), ('run.log/sensor_captures_v3/infrastruct_lidar/lidar_frames/10969.ply', (139.752, -61.2, -36.8, 7.6, -0.0, 0.0, -0.0, 1.0))]
+# # Ego Frame 65: [('run.log/sensor_captures_v3/ego_lidar/frames/10975.ply', (139.952, -52.4286, -33.9597, 2.0592, -0.0032, -0.0022, -0.7027, 0.7114)), ('run.log/sensor_captures_v3/infrastruct_lidar/frames/10969.ply', (139.752, -61.2, -36.8, 7.6, -0.0, 0.0, -0.0, 1.0))]
 
 # # === 65th Frame RELATIVE Match ===
-# # Ego Frame 65: [('run.log/sensor_captures_v3/ego_lidar/lidar_frames/10975.ply', (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)), ('run.log/sensor_captures_v3/infrastruct_lidar/lidar_frames/10969.ply', (-8.7714, -2.840299999999999, 5.540799999999999, 0.0032, 0.0022, 0.7027, 0.7114))]
+# # Ego Frame 65: [('run.log/sensor_captures_v3/ego_lidar/frames/10975.ply', (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)), ('run.log/sensor_captures_v3/infrastruct_lidar/frames/10969.ply', (-8.7714, -2.840299999999999, 5.540799999999999, 0.0032, 0.0022, 0.7027, 0.7114))]
 # # Combined point cloud saved to out_combined_with_colors_v5.ply
 
 # # === 57th Frame Match ===
-# # Ego Frame 57: [('run.log/sensor_captures_v3/ego_lidar/lidar_frames/10957.ply', (139.152, -52.492, -27.3943, 2.0446, -0.0009, -0.002, -0.7077, 0.7065)), ('run.log/sensor_captures_v3/infrastruct_lidar/lidar_frames/10957.ply', (139.152, -61.2, -36.8, 7.6, -0.0, 0.0, -0.0, 1.0))]
+# # Ego Frame 57: [('run.log/sensor_captures_v3/ego_lidar/frames/10957.ply', (139.152, -52.492, -27.3943, 2.0446, -0.0009, -0.002, -0.7077, 0.7065)), ('run.log/sensor_captures_v3/infrastruct_lidar/frames/10957.ply', (139.152, -61.2, -36.8, 7.6, -0.0, 0.0, -0.0, 1.0))]
 
 # # === 57th Frame RELATIVE Match ===
-# # Ego Frame 57: [('run.log/sensor_captures_v3/ego_lidar/lidar_frames/10957.ply', (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)), ('run.log/sensor_captures_v3/infrastruct_lidar/lidar_frames/10957.ply', (-8.708000000000006, -9.405699999999996, 5.5554, 0.0009, 0.002, 0.7077, 0.7065))]
+# # Ego Frame 57: [('run.log/sensor_captures_v3/ego_lidar/frames/10957.ply', (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)), ('run.log/sensor_captures_v3/infrastruct_lidar/frames/10957.ply', (-8.708000000000006, -9.405699999999996, 5.5554, 0.0009, 0.002, 0.7077, 0.7065))]
 # # Combined point cloud saved to out_combined_with_colors_v9.ply
 
 #         combine_point_clouds_with_offset_and_colors(clouds, out_file='test_lidar_merge.log/out_combined_with_colors_v11.ply')

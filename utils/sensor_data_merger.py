@@ -85,7 +85,7 @@ class SensorDataMerger:
         for sensor in [self.ego_sensor] + self.other_sensors:
             sensor_path = os.path.join(self.base_dir, sensor)
             tum_path = os.path.join(sensor_path, 'ground_truth_poses_tum.txt')
-            frames_path = os.path.join(sensor_path, 'lidar_frames')
+            frames_path = os.path.join(sensor_path, 'frames')
 
             tum_data = load_tum_file(tum_path)
             filenames = natsorted(
