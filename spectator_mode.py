@@ -10,8 +10,50 @@ import time
 # Constants
 BASE_SPEED = 100.0  # m/s
 BOOST_MULTIPLIER = 1.3
+SNAIL_MULTIPLIER = 0.3
 ROTATE_SPEED = 30.0  # deg/s
 MOUSE_SENSITIVITY = 0.1  # deg/pixel
+
+# CARLA window size
+CARLA_WINDOW_WIDTH = 900 * 2
+CARLA_WINDOW_HEIGHT = 440 * 2
+
+# Mouse control window size
+MOUSE_WINDOW_WIDTH = 800
+MOUSE_WINDOW_HEIGHT = 600
+
+SHOW_MOUSE_WINDOW = False # Set to False to hide mouse control window
+
+# Key configs (note that these can lead to collisions with other keys)
+# # Movement
+# forward_key = 'w'
+# backward_key = 's'
+# left_key = 'a'
+# right_key = 'd'
+# up_key = 'space'
+# down_key = 'shift'
+# fast_key = 'ctrl'
+# slow_key = 'alt'
+# # Rotation
+# look_up_key = 'up'
+# look_down_key = 'down'
+# look_right_key = 'right'
+# look_left_key = 'left'
+
+# Movement - shifted minecraft
+forward_key = 'e'
+backward_key = 'd'
+left_key = 's'
+right_key = 'f'
+up_key = 'space'
+down_key = 'shift'
+fast_key = 'a'
+slow_key = 'z'
+# Rotation - vim movement keybinds
+look_up_key = 'k'
+look_down_key = 'j'
+look_right_key = 'l'
+look_left_key = 'h'
 
 class KeyState:
     """
@@ -56,8 +98,8 @@ class MouseRotationWindow(pyglet.window.Window):
     """
     Pyglet window used to track mouse movement for camera rotation.
     """
-    def __init__(self):
-        super().__init__(width=800, height=600, visible=True, caption="Camera Mouse Control")
+    def __init__(self, width=800, height=600, visible=True):
+        super().__init__(width=width, height=height, visible=visible, caption="Camera Mouse Control")
         self.set_mouse_visible(False)
         self.dx = 0
         self.dy = 0
@@ -107,8 +149,8 @@ def main():
 
     # Create camera sensor
     camera_bp = blueprint_library.find('sensor.camera.rgb')
-    camera_bp.set_attribute('image_size_x', '640')
-    camera_bp.set_attribute('image_size_y', '480')
+    camera_bp.set_attribute('image_size_x', str(CARLA_WINDOW_WIDTH))
+    camera_bp.set_attribute('image_size_y', str(CARLA_WINDOW_HEIGHT))
     camera_bp.set_attribute('fov', '90')
 
     # Set spectator position and orientation
@@ -135,7 +177,7 @@ def main():
     camera.listen(process_img)
 
     keys = KeyState()
-    mouse_window = MouseRotationWindow()
+    mouse_window = MouseRotationWindow(width=MOUSE_WINDOW_WIDTH, height=MOUSE_WINDOW_HEIGHT, visible=SHOW_MOUSE_WINDOW)
 
     pitch = -90.0
     yaw = 0.0
@@ -148,16 +190,17 @@ def main():
             prev_time = now
 
             # Determine movement speed
-            speed = BASE_SPEED * (BOOST_MULTIPLIER if keys.is_pressed('ctrl') else 1.0)
+            speed = BASE_SPEED * (BOOST_MULTIPLIER if keys.is_pressed(fast_key) else 1.0)
+            speed = BASE_SPEED * (SNAIL_MULTIPLIER if keys.is_pressed(slow_key) else 1.0)
 
             # Handle rotation input
-            if keys.is_pressed('up'):
+            if keys.is_pressed(look_up_key):
                 pitch += ROTATE_SPEED * dt
-            if keys.is_pressed('down'):
+            if keys.is_pressed(look_down_key):
                 pitch -= ROTATE_SPEED * dt
-            if keys.is_pressed('left'):
+            if keys.is_pressed(look_left_key):
                 yaw -= ROTATE_SPEED * dt
-            if keys.is_pressed('right'):
+            if keys.is_pressed(look_right_key):
                 yaw += ROTATE_SPEED * dt
 
             dx, dy = mouse_window.get_mouse_delta()
@@ -173,17 +216,17 @@ def main():
             # Compute movement vector
             move = carla.Location()
 
-            if keys.is_pressed('w'):
+            if keys.is_pressed(forward_key):
                 move += carla.Location(x=forward.x * speed * dt, y=forward.y * speed * dt)
-            if keys.is_pressed('s'):
+            if keys.is_pressed(backward_key):
                 move -= carla.Location(x=forward.x * speed * dt, y=forward.y * speed * dt)
-            if keys.is_pressed('a'):
+            if keys.is_pressed(left_key):
                 move -= carla.Location(x=right.x * speed * dt, y=right.y * speed * dt)
-            if keys.is_pressed('d'):
+            if keys.is_pressed(right_key):
                 move += carla.Location(x=right.x * speed * dt, y=right.y * speed * dt)
-            if keys.is_pressed('space'):
+            if keys.is_pressed(up_key):
                 move.z += speed * dt
-            if keys.is_pressed('shift'):
+            if keys.is_pressed(down_key):
                 move.z -= speed * dt
 
             # Update spectator transform
