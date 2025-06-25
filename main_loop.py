@@ -72,6 +72,7 @@ def game_loop(args):
     world = None
 
     try:
+        # TODO: is this used?
         if sim_config.general.seed is not None:
             random.seed(sim_config.general.seed)
 
@@ -82,6 +83,8 @@ def game_loop(args):
 
         try:
             world = client.get_world()
+            if world is None:
+                raise RuntimeError("Failed to get CARLA world, although no exception was raised.")
         except RuntimeError as e:
             logging.critical(f"Failed to get CARLA world: {e}. Is the CARLA server running?")
             raise RuntimeError("Failed to get CARLA world") from e
@@ -92,33 +95,24 @@ def game_loop(args):
         if not args.no_save:
             clear_directory(sim_config.general.output_dir)
 
-        if world is None:
-            logging.critical("Failed to get CARLA world")
-            raise RuntimeError("Failed to get CARLA world")
-        traffic_manager = client.get_trafficmanager()
-
         settings = world.get_settings()
         settings.synchronous_mode = True
         settings.fixed_delta_seconds = 0.05
         world.apply_settings(settings)
 
         # TRAFFIC MANAGER ------------------------------------------------------
-        # # set vehicle to drive 20% of speed limit
-
         # Examples of how to use Traffic Manager parameters
-        # traffic_manager.global_percentage_speed_difference(30.0)
+        # # Set vehicle to drive 20% of speed limit
+        # traffic_manager.global_percentage_speed_difference(20.0)
         # traffic_manager.vehicle_percentage_speed_difference(ego_vehicle, 15)
-        # optional TODO: move traffic manager options to sim_config?
-        traffic_manager.set_global_distance_to_leading_vehicle(2.5)
+        # Optional TODO: move traffic manager options to sim_config?
 
         traffic_manager = client.get_trafficmanager(global_config.carla_world.traffic_manager_port)
-
-
+        traffic_manager.set_global_distance_to_leading_vehicle(2.5)
         traffic_manager.set_synchronous_mode(True)
 
         if sim_config.general.seed is not None:
             traffic_manager.set_random_device_seed(sim_config.general.seed)
-
 
         # ACTORS ---------------------------------------------------------------
         # Keep track of actors to despawn at the end
