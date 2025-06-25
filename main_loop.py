@@ -117,49 +117,53 @@ def game_loop(args):
         # ACTORS ---------------------------------------------------------------
         # Keep track of actors to despawn at the end
 
-        # AGENT
-        ego_vehicle = spawn_vehicle(
-            world, 
-            traffic_manager, 
-            transform=sim_config.ego_vehicle.transform,
-            filter=sim_config.ego_vehicle.filter, 
-            type=sim_config.ego_vehicle.type,
-            seed=sim_config.general.seed, 
-            project_to_road=True,
-            lane_type=carla.LaneType.Driving)
-        actor_list.append(ego_vehicle)
+        agents = {}
 
-        # OTHER CARS
+        # ---+ SINGLE AGENTS +---
+        for agent_config in sim_config.agents:
+            # Spawn each agent, appending a pointer to the CARLA object with
+            # its name to the `agents` dict, so that sensors can be attached.
+            spawned_agent = spawn_vehicle(
+                world,
+                traffic_manager, 
+                transform=agent_config.transform,
+                filter=agent_config.filter, 
+                type=agent_config.type,
+                seed=sim_config.general.seed, 
+                project_to_road=True,
+                lane_type=carla.LaneType.Driving,
+                autopilot=agent_config.autopilot)
+            if spawned_agent is None:
+                logging.error(f"Failed to spawn agent {agent_config.name}.")
+                continue
+            agents[agent_config.name] = spawned_agent
+            actor_list.append(spawned_agent)
+
+        # ---+ OTHER VEHICLES +---
         actor_list += spawn_vehicles(
             world, 
             traffic_manager, 
             seed=sim_config.general.seed, 
             number=sim_config.other_vehicles.n_vehicles)
 
+        # ---+ SENSORS +---
         # Only spawn sensors if data saving is enabled
         if not args.no_save:
-            # EGO CAMERA
-            actor_list.append(spawn_camera(
-                sim_config.ego_camera.data_dir, 
-                world, 
-                sim_config.ego_camera.transform, 
-                attach_to=ego_vehicle))
-
-            # EGO LIDAR SENSOR
-            actor_list.append(spawn_lidar(
-                sim_config.ego_lidar.data_dir, 
-                world, 
-                sim_config.ego_lidar.transform, 
-                attach_to=ego_vehicle))
-
-            # INFRASTRUCT LIDAR SENSORS
-            infrastruct_lidar_sensors = [sim_config.ne_lidar, sim_config.se_lidar, sim_config.sw_lidar, sim_config.nw_lidar]
-            for lidar in infrastruct_lidar_sensors:
-                actor_list.append(spawn_lidar(
-                    lidar.data_dir, 
-                    world, 
-                    lidar.transform, 
-                    attach_to=None))
+            for sensor_config in sim_config.sensors:
+                # Attach to an agent if specified
+                attach_actor = agents.get(sensor_config.attach_to) if sensor_config.attach_to else None
+                if sensor_config.name.endswith("_lidar"):
+                    actor_list.append(spawn_lidar(
+                        sensor_config.data_dir, 
+                        world, 
+                        sensor_config.transform, 
+                        attach_to=attach_actor))
+                elif sensor_config.name.endswith("_camera"):
+                    actor_list.append(spawn_camera(
+                        sensor_config.data_dir, 
+                        world, 
+                        sensor_config.transform, 
+                        attach_to=attach_actor))
 
 
         # MAIN SIM LOOP --------------------------------------------------------
@@ -179,14 +183,7 @@ def game_loop(args):
                     while True:
                         # Verify whether the number of TUM entries (number of lines) and number of files is equal in each data dir
                         # We know that the simulation is done when the number of files in the respective `frames` directory is equal to the number of lines in the `ground_truth_poses_tum.txt` file
-                        directories = [
-                            sim_config.ego_camera.data_dir,
-                            sim_config.ego_lidar.data_dir,
-                            sim_config.ne_lidar.data_dir,
-                            sim_config.se_lidar.data_dir,
-                            sim_config.sw_lidar.data_dir,
-                            sim_config.nw_lidar.data_dir
-                        ]
+                        directories = [s.data_dir for s in sim_config.sensors if s.data_dir is not None]
 
                         finished = True
                         for directory in directories:

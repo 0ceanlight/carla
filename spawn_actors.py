@@ -140,7 +140,7 @@ def _try_get_random_vehicles(world, number=1, filter="vehicle.*.*", type="car", 
     return random.choice(vehicle_bps, size=number).tolist()
 
 
-def _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=False, lane_type=carla.LaneType.Any):
+def _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=False, lane_type=carla.LaneType.Any, autopilot=True):
     """
     Attempts to spawn a vehicle in the CARLA world at the specified transform.
     If the vehicle cannot be spawned, a critical error is logged and None is returned.
@@ -161,10 +161,11 @@ def _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to
 
     vehicle = world.try_spawn_actor(vehicle_bp, transform)
     if vehicle is None:
-        logging.critical(f"Vehicle {vehicle_bp.id} could not be spawned at location {transform}")
+        logging.error(f"Vehicle {vehicle_bp.id} could not be spawned at location {transform}")
         return None
-    # Set to automatic control
-    vehicle.set_autopilot(True, traffic_manager.get_port())
+    if autopilot:
+        # Set to automatic control
+        vehicle.set_autopilot(True, traffic_manager.get_port())
     traffic_manager.update_vehicle_lights(vehicle, True)
     logging.debug(f"Vehicle {vehicle_bp.id} was spawned at {transform.location} and {transform.rotation}")
     return vehicle
@@ -362,7 +363,14 @@ def spawn_lidar(output_dir, world, transform, attach_to=None):
     lidar_bp.set_attribute('noise_stddev',
                            str(global_config.carla_lidar.noise_stddev))
 
-    lidar = world.spawn_actor(lidar_bp, transform, attach_to=attach_to)
+    lidar = None
+    if attach_to is not None:
+        # Attach LiDAR to the vehicle
+        lidar = world.spawn_actor(lidar_bp, transform, attach_to=attach_to, 
+                              attachment_type=carla.AttachmentType.Rigid)
+    else:
+        lidar = world.spawn_actor(lidar_bp, transform)
+
     lidar.listen(create_lidar_callback(output_dir))
 
     return lidar
@@ -440,7 +448,7 @@ def spawn_vehicles(world,
     vehicle_bps = _try_get_random_vehicles(world, number=number, filter=filter, type=type, seed=seed)
 
     for vehicle_bp, transform in zip(vehicle_bps, transforms):
-        vehicle = _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=project_to_road, lane_type=lane_type)
+        vehicle = _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=project_to_road, lane_type=lane_type, autopilot=True)
 
         if vehicle is not None:
             actor_list.append(vehicle)
@@ -456,7 +464,8 @@ def spawn_vehicle(world,
                    type="car",
                    seed=None,
                    project_to_road=False,
-                   lane_type=carla.LaneType.Any):
+                   lane_type=carla.LaneType.Any,
+                   autopilot=True):
     """
     Spawns a single vehicle in the CARLA world at the specified transform random spawn point.
 
@@ -485,4 +494,4 @@ def spawn_vehicle(world,
         return None
     vehicle_bp = vehicle_bps[0]
 
-    return _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=project_to_road, lane_type=lane_type)
+    return _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=project_to_road, lane_type=lane_type, autopilot=autopilot)

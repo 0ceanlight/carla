@@ -11,23 +11,14 @@ class ConfigError(Exception):
     pass
 
 
+_config = None
+
+
 def _parse_vector(s: str) -> list[float]:
-    """
-    Parses a comma-separated string into a list of floats.
-
-    Args:
-        s: A string like "1.0, 2.0, 3.0"
-
-    Returns:
-        A list of floats.
-
-    Raises:
-        ConfigError: If parsing fails.
-    """
     try:
         return [float(x.strip()) for x in s.split(',')]
     except ValueError:
-        raise ConfigError(f"Invalid vector string: '{s}'")
+        raise ConfigError(f"Invalid vector string: {s}")
 
 
 def _make_transform(location_str: str, rotation_str: Optional[str] = None) -> carla.Transform:
@@ -46,46 +37,28 @@ def _make_transform(location_str: str, rotation_str: Optional[str] = None) -> ca
     return carla.Transform(loc, rot)
 
 
-def _load_actor(config, section: str, base_output_dir: str) -> SimpleNamespace:
+def _get_attach_to(sensor_name: str, attach_to: Optional[str], agents: list[SimpleNamespace]) -> Optional[str]:
     """
-    Loads a vehicle or actor section from the config.
-
+    Gets the attach_to value for a sensor, ensuring it matches an existing agent.
+    
     Args:
-        config: The configparser object.
-        section: The section name in the config file.
-        base_output_dir: The root directory for output data.
+        attach_to: The name of the agent to attach to, or None.
+        agents: List of existing agents."""
 
-    Returns:
-        A SimpleNamespace with actor properties.
-    """
-    is_random_actor = section == "other_vehicles"
-
-    if not is_random_actor:
-        if not config.has_option(section, "location"):
-            raise ConfigError(f"[{section}] must have a 'location' field")
-        location_str = config.get(section, "location")
-        rotation_str = config.get(section, "rotation") if config.has_option(section, "rotation") else None
-        transform = _make_transform(location_str, rotation_str)
-    else:
-        transform = None  # Randomized spawn → no transform
-
-    data_dir = config.get(section, "data_dir")
-    full_data_path = os.path.join(base_output_dir, data_dir)
-
-    info = {
-        "data_dir": full_data_path,
-        "transform": transform,
-    }
-
-    for opt_key in ["filter", "type", "n_vehicles"]:
-        if config.has_option(section, opt_key):
-            value = config.getint(section, opt_key) if opt_key == "n_vehicles" else config.get(section, opt_key)
-            info[opt_key] = value
-
-    return SimpleNamespace(**info)
+    if attach_to is None or attach_to.strip().lower() == "none":
+        return None
+    if not any(agent.name == attach_to for agent in agents):
+        raise ConfigError(f"""Sensor {sensor_name} specified to attach to 
+                            {attach_to}, but no such agent exists. This field 
+                            should be either a valid agent name, or 
+                            'None'""")
+    return attach_to
 
 
-_sim_config = None  # Singleton instance
+class DotDict(SimpleNamespace):
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 def init_config(path: str):
@@ -99,66 +72,94 @@ def init_config(path: str):
         FileNotFoundError: If the file doesn't exist.
         ConfigError: If parsing or validation fails.
     """
-    global _sim_config
-    _sim_config = _load_sim_config(path)
+    global _config
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Config file not found: {path}")
+
+    parser = configparser.ConfigParser()
+    parser.read(path)
+
+    general = parser["general"]
+    general_config = DotDict(
+        name="general",
+        seed=int(general["seed"]) if general["seed"].strip().lower() != "none" else None,
+        n_ticks=int(general["n_ticks"]),
+        output_dir=general["output_dir"],
+    )
+
+    agents = []
+    sensors = []
+    other_vehicles = None
+
+    for section in parser.sections():
+        if section == "general":
+            continue
+
+        item = parser[section]
+        name = section
+
+        if name.endswith("_vehicle"):
+            # single agent
+            transform = _make_transform(item["location"], item.get("rotation"))
+            agent = DotDict(
+                name=name,
+                transform=transform,
+                location=item["location"],
+                rotation=item.get("rotation", "0.0,0.0,0.0"),
+                filter=item["filter"],
+                type=item["type"],
+                autopilot=item.getboolean("autopilot")
+            )
+            agents.append(agent)
+            if name == "ego_vehicle":
+                ego_vehicle = agent
+
+        elif name.endswith("_lidar") or name.endswith("_camera"):
+            transform = _make_transform(item["location"], item.get("rotation"))
+            attach_to = _get_attach_to(name, item.get("attach_to"), agents)
+            # Join output_dir with data_dir
+            abs_dir = os.path.join(general_config.output_dir, item.get("data_dir", name))
+            sensor = DotDict(
+                name=name,
+                attach_to=attach_to,
+                location=item["location"],
+                rotation=item.get("rotation", "0.0,0.0,0.0"),
+                transform=transform,
+                data_dir=abs_dir,
+            )
+            sensors.append(sensor)
+
+        elif name == "other_vehicles":
+            other_vehicles = DotDict(
+                name=name,
+                n_vehicles=int(item["n_vehicles"]),
+                filter=item["filter"],
+                type=item["type"]
+            )
+
+    _config = DotDict(
+        general=general_config,
+        sensors=sensors,
+        agents=agents,
+        other_vehicles=other_vehicles,
+        ego_vehicle=ego_vehicle
+    )
 
 
-def get_config() -> SimpleNamespace:
+def get_config():
     """
     Returns the initialized simulation config.
 
     Returns:
-        A SimpleNamespace with `.general`, `.ego_vehicle`, etc.
+        The simulation config object.
 
     Raises:
-        ConfigError: If config has not been initialized.
+        ConfigError: If the config has not been initialized.
     """
-    if _sim_config is None:
+    if _config is None:
         raise ConfigError("Simulation config not initialized. Call init_config(path) first.")
-    return _sim_config
-
-
-def _load_sim_config(path: str) -> SimpleNamespace:
-    """
-    Loads and validates the full simulation config file.
-
-    Args:
-        path: Path to the config.ini file.
-
-    Returns:
-        A SimpleNamespace containing simulation parameters and actor configs.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
-        ConfigError: If required fields are missing or invalid.
-    """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Config file not found: {path}")
-
-    config = configparser.ConfigParser()
-    config.read(path)
-
-    if "general" not in config:
-        raise ConfigError("Missing [general] section")
-
-    seed = config.getint("general", "seed")
-    n_ticks = config.getint("general", "n_ticks")
-    output_dir = config.get("general", "output_dir")
-
-    actors = {}
-    for section in config.sections():
-        if section == "general":
-            continue
-        actors[section] = _load_actor(config, section, output_dir)
-
-    return SimpleNamespace(
-        general=SimpleNamespace(
-            seed=seed,
-            n_ticks=n_ticks,
-            output_dir=output_dir
-        ),
-        **actors
-    )
+    return _config
 
 # -----------------------------------
 # Example usage:
@@ -167,7 +168,8 @@ def _load_sim_config(path: str) -> SimpleNamespace:
 #
 # sim_config_parser.init_config("config/sim_config.ini") # Can be omitted if already initialized
 # config = sim_config_parser.get_config()
-#
-# print(config.ego_vehicle.filter)          # e.g. "vehicle.dodge.charger"
-# print(config.ego_vehicle.type)            # e.g. "car"
-# print(config.ego_vehicle.transform.location)  # e.g. carla.Location(x=0.0, y=0.0, z=0.0)
+# 
+# for vehicle in config.vehicles:
+#     print(vehicle.filter)          # e.g. "vehicle.dodge.charger"
+#     print(vehicle.type)            # e.g. "car"
+#     print(vehicle.transform.location)  # e.g. carla.Location(x=0.0, y=0.0, z=0.0)
