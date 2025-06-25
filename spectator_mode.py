@@ -6,6 +6,7 @@ from pynput import keyboard
 from threading import Lock
 import math
 import time
+import argparse
 
 # Constants
 BASE_SPEED = 100.0  # m/s
@@ -108,6 +109,11 @@ class MouseRotationWindow(pyglet.window.Window):
         self.set_mouse_position(self.mouse_cx, self.mouse_cy)
         pyglet.clock.schedule_interval(self.clear_mouse_delta, 1/60)
 
+        # Make window capture mouse. This is activated when window is focused.
+        # This can be exited by using a system shortcut like Super+Tab to focus
+        # another window.
+        self.set_exclusive_mouse(True)
+
     def on_mouse_motion(self, x, y, dx, dy):
         self.dx += dx
         self.dy += dy
@@ -142,6 +148,22 @@ def main():
     Connects to CARLA, spawns a floating spectator-attached camera, and allows
     Minecraft-like control via WASD/arrow keys and mouse.
     """
+
+    # Argparser for display options
+    parser = argparse.ArgumentParser(description="CARLA Spectator Mode")
+    parser.add_argument(
+        '-s', '--show_mouse_window', type=bool, default=SHOW_MOUSE_WINDOW, 
+        dest='show_mouse_window', help='Show mouse control window (default: False)')
+    parser.add_argument(
+        '-w', '--window_size', type=int, nargs=2, default=(MOUSE_WINDOW_WIDTH, MOUSE_WINDOW_HEIGHT),
+        dest='window_size', 
+        help=f'Set mouse control window size: width height (default: {MOUSE_WINDOW_WIDTH} {MOUSE_WINDOW_HEIGHT})')
+    parser.add_argument(
+        '-c', '--carla_window_size', type=int, nargs=2, default=(CARLA_WINDOW_WIDTH, CARLA_WINDOW_HEIGHT),
+        dest='carla_window_size',
+        help=f'Set CARLA window size: width height (default: {CARLA_WINDOW_WIDTH} {CARLA_WINDOW_HEIGHT})')
+    args = parser.parse_args()
+
     client = carla.Client('localhost', 2000)
     client.set_timeout(10.0)
     world = client.get_world()
@@ -149,8 +171,8 @@ def main():
 
     # Create camera sensor
     camera_bp = blueprint_library.find('sensor.camera.rgb')
-    camera_bp.set_attribute('image_size_x', str(CARLA_WINDOW_WIDTH))
-    camera_bp.set_attribute('image_size_y', str(CARLA_WINDOW_HEIGHT))
+    camera_bp.set_attribute('image_size_x', str(args.carla_window_size[0]))
+    camera_bp.set_attribute('image_size_y', str(args.carla_window_size[1]))
     camera_bp.set_attribute('fov', '90')
 
     # Set spectator position and orientation
@@ -177,7 +199,7 @@ def main():
     camera.listen(process_img)
 
     keys = KeyState()
-    mouse_window = MouseRotationWindow(width=MOUSE_WINDOW_WIDTH, height=MOUSE_WINDOW_HEIGHT, visible=SHOW_MOUSE_WINDOW)
+    mouse_window = MouseRotationWindow(width=args.window_size[0], height=args.window_size[1], visible=args.show_mouse_window)
 
     pitch = -90.0
     yaw = 0.0
