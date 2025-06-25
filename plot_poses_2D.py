@@ -84,7 +84,7 @@ def calc_offset_margin(transform_arr_1, transform_arr_2, weight=1.0, max=None):
 
 
 # Input data directory
-sensor_data_dir = "output_v1.log/sensor_captures_v3"
+sensor_data_dir = "build/sim_1_output"
 # Output data/results directory
 out_dir = "test_registration_GPS_drifted_data.log"
 

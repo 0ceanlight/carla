@@ -2,11 +2,13 @@ import os
 from utils.sensor_data_merger import SensorDataMerger
 from utils.merge_plys import combine_point_clouds_with_poses
 import open3d as o3d
+import shutil
 
 if __name__ == "__main__":
     # Example setup
     base_directory = "build/sim_1_output"
-    sensors = ["ego_lidar", "ne_lidar", "se_lidar", "sw_lidar", "nw_lidar"]
+    output_directory = os.path.join(base_directory, "merged_infrastruct_lidar")
+    # sensors = ["ego_lidar", "ne_lidar", "se_lidar", "sw_lidar", "nw_lidar"]
     sensors = ["ne_lidar", "se_lidar", "sw_lidar", "nw_lidar"]
     max_discrepancy = 0.2  # seconds
 
@@ -40,7 +42,12 @@ if __name__ == "__main__":
 # manager.save_all_merged_plys("test_merger.log/out_frames_abs_v0/", relative_match=True)
 # manager.save_all_merged_plys("test_merger.log/sim_0_output/merged_frames/", relative_match=False)
 # manager.save_all_merged_plys("test_merger.log/sim_0_output_no_ego/merged_frames/", relative_match=False)
-manager.save_all_merged_plys("test_merger.log/sim_0_output_no_ego_v2/merged_frames/", relative_match=False)
+manager.save_all_merged_plys(os.path.join(output_directory, "frames"), relative_match=True)
+
+# Give our new frames artificial pose data by copying ground truth tum file from ego lidar
+ne_lidar_gt_tum_file = os.path.join(base_directory, "ne_lidar/ground_truth_poses_tum.txt")
+merged_lidar_gt_tum_file = os.path.join(output_directory, "ground_truth_poses_tum.txt")
+shutil.copy(ne_lidar_gt_tum_file, merged_lidar_gt_tum_file)
 
 # TESTING SINGLE MATCHES W/ MANUAL MERGING -------------------------------------
 
