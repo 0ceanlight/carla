@@ -93,7 +93,7 @@ def game_loop(args):
 
         # Clear output data directory
         if not args.no_save:
-            clear_directory(sim_config.general.output_dir)
+            clear_directory(sim_config.general.output_dir, noconfirm=args.noconfirm)
 
         settings = world.get_settings()
         settings.synchronous_mode = True
@@ -275,6 +275,10 @@ def main():
     argparser.add_argument(
         '-s', '--sim-config', type=str, default='config/sim_config_0.ini',
         help='Path to the simulation configuration file (default: config/sim_config_0.ini)')
+    argparser.add_argument(
+        '--noconfirm', action='store_true', dest='noconfirm',
+        help='Do not ask for confirmation before clearing the output directory'
+    )
         
     args = argparser.parse_args()
 
