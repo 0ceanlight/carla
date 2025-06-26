@@ -197,7 +197,7 @@ def _save_right_handed_ply(lidar_data, filename):
         np.savetxt(f, points, fmt='%.4f %.4f %.4f %.4f', delimiter=' ')
 
 
-def create_lidar_callback(data_dir):
+def create_lidar_callback(data_dir, world, save_data=True, name=""):
     """
     Creates a LiDAR callback function that saves point cloud data and corresponding poses
     to disk, maintaining a separate frame counter per callback instance.
@@ -219,10 +219,20 @@ def create_lidar_callback(data_dir):
     start_time = time.time()
     frame_counter = 0
 
-    ply_dir = os.path.join(data_dir, 'frames')
-    os.makedirs(ply_dir, exist_ok=True)
-
     tum_file = os.path.join(data_dir, f'ground_truth_poses_tum.txt')
+    ply_dir = os.path.join(data_dir, 'frames')
+    if save_data:
+        os.makedirs(ply_dir, exist_ok=True)
+
+    # DEBUG: lines
+    prev_location = None
+    line_color = None
+    # Orange for ego
+    if name.lower().find("ego") >= 0:
+        line_color = carla.Color(255, 72, 0)  # RGB for orange
+    # Blue/gray for other vehicles
+    else:
+        line_color = carla.Color(0, 0, 255)  # RGB for blue
 
     def lidar_callback(point_cloud):
         """
@@ -239,26 +249,37 @@ def create_lidar_callback(data_dir):
             - Appends a line to `<data_dir>/ground_truth_poses_tum.txt` in TUM pose format.
         """
 
-        nonlocal frame_counter
-        nonlocal ply_dir
-        nonlocal tum_file
+        nonlocal prev_location
+        nonlocal world
+        nonlocal line_color
 
-        frame_number = f"{frame_counter:06d}"
+        if prev_location is not None:
+            # DEBUG: draw lines between points
+            world.debug.draw_line(prev_location, point_cloud.transform.location, thickness=0.2, color=line_color, life_time=20)
 
-        logging.debug(
-            f"Saving LiDAR data for frame: {frame_number}, point count: {(point_cloud)}"
-        )
+        prev_location = point_cloud.transform.location
 
-        # Format with zero-padded frame number
-        ply_path = os.path.join(ply_dir, f'{frame_number}.ply')
-        # Save the point cloud to a file in PLY format
-        _save_right_handed_ply(point_cloud, ply_path)
+        if save_data:
+            nonlocal frame_counter
+            nonlocal ply_dir
+            nonlocal tum_file
 
-        # Number of seconds since Unix epoch, according to TUM format
-        timestamp = start_time + point_cloud.timestamp
-        # Save the vehicle pose to a file in TUM format
-        append_right_handed_tum_pose(tum_file, point_cloud.transform,
-                                     timestamp)
+            frame_number = f"{frame_counter:06d}"
+
+            logging.debug(
+                f"Saving LiDAR data for frame: {frame_number}, point count: {(point_cloud)}"
+            )
+
+            # Format with zero-padded frame number
+            ply_path = os.path.join(ply_dir, f'{frame_number}.ply')
+            # Save the point cloud to a file in PLY format
+            _save_right_handed_ply(point_cloud, ply_path)
+
+            # Number of seconds since Unix epoch, according to TUM format
+            timestamp = start_time + point_cloud.timestamp
+            # Save the vehicle pose to a file in TUM format
+            append_right_handed_tum_pose(tum_file, point_cloud.transform,
+                                        timestamp)
 
         # increment frame number
         frame_counter += 1
@@ -333,7 +354,7 @@ def create_camera_callback(data_dir):
     return camera_callback
 
 
-def spawn_lidar(output_dir, world, transform, attach_to=None):
+def spawn_lidar(output_dir, world, transform, attach_to=None, save_data=True, name=""):
     lidar_bp = world.get_blueprint_library().find('sensor.lidar.ray_cast')
 
     lidar_bp.set_attribute('channels', 
@@ -371,7 +392,7 @@ def spawn_lidar(output_dir, world, transform, attach_to=None):
     else:
         lidar = world.spawn_actor(lidar_bp, transform)
 
-    lidar.listen(create_lidar_callback(output_dir))
+    lidar.listen(create_lidar_callback(output_dir, world, save_data=save_data, name=name))
 
     return lidar
 
@@ -494,4 +515,13 @@ def spawn_vehicle(world,
         return None
     vehicle_bp = vehicle_bps[0]
 
-    return _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=project_to_road, lane_type=lane_type, autopilot=autopilot)
+    vehicle = _try_spawn_vehicle(world, vehicle_bp, transform, traffic_manager, project_to_road=project_to_road, lane_type=lane_type, autopilot=autopilot)
+    if vehicle is not None and autopilot is False:
+        world.debug.draw_box(
+            vehicle.bounding_box,
+            vehicle.get_transform().rotation,
+            thickness=0.4,
+            color=carla.Color(0, 0, 255),
+            life_time=5
+        )
+    return vehicle

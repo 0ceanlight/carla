@@ -147,24 +147,24 @@ def game_loop(args):
             number=sim_config.other_vehicles.n_vehicles)
 
         # ---+ SENSORS +---
-        # Only spawn sensors if data saving is enabled
-        if not args.no_save:
-            for sensor_config in sim_config.sensors:
-                # Attach to an agent if specified
-                attach_actor = agents.get(sensor_config.attach_to) if sensor_config.attach_to else None
-                if sensor_config.name.endswith("_lidar"):
-                    actor_list.append(spawn_lidar(
-                        sensor_config.data_dir, 
-                        world, 
-                        sensor_config.transform, 
-                        attach_to=attach_actor))
-                elif sensor_config.name.endswith("_camera"):
-                    actor_list.append(spawn_camera(
-                        sensor_config.data_dir, 
-                        world, 
-                        sensor_config.transform, 
-                        attach_to=attach_actor))
-
+        for sensor_config in sim_config.sensors:
+            # Attach to an agent if specified
+            attach_actor = agents.get(sensor_config.attach_to) if sensor_config.attach_to else None
+            if sensor_config.name.endswith("_lidar") and (not args.no_save or args.draw_trajectory):
+                actor_list.append(spawn_lidar(
+                    sensor_config.data_dir, 
+                    world, 
+                    sensor_config.transform, 
+                    attach_to=attach_actor,
+                    save_data=not args.no_save,
+                    name=sensor_config.name))
+            # Only spawn camera if data saving is enabled
+            elif sensor_config.name.endswith("_camera") and not args.no_save:
+                actor_list.append(spawn_camera(
+                    sensor_config.data_dir, 
+                    world, 
+                    sensor_config.transform, 
+                    attach_to=attach_actor))
 
         # MAIN SIM LOOP --------------------------------------------------------
         logging.info(f'Running simulation for {sim_config.general.n_ticks} ticks...')
@@ -275,6 +275,10 @@ def main():
     argparser.add_argument(
         '-s', '--sim-config', type=str, default='config/sim_config_0.ini',
         help='Path to the simulation configuration file (default: config/sim_config_0.ini)')
+    argparser.add_argument(
+        '-d', '--draw-trajectory', action='store_true', dest='draw_trajectory',
+        help='Draw the vehicle trajectories in the simulation'
+    )
         
     args = argparser.parse_args()
 
