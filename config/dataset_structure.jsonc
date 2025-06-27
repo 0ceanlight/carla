@@ -1,0 +1,73 @@
+{
+    "simulations": [
+        {
+            "sim_0": {
+                "ego": "ego_lidar",
+                "sensor_permutations": {
+                    "6_infra_2_agent": ["agent_0_lidar", "agent_1_lidar", "nw_lidar", "ne_lidar", "se_lidar", "sw_lidar"],
+                    "4_infra": ["nw_lidar", "ne_lidar", "se_lidar"],
+                    "2_infra": ["nw_lidar", "se_lidar"],
+                    "2_agent": ["agent_0_lidar", "agent_1_lidar"],
+                    "1_infra": ["se_lidar"],
+                    "1_agent": ["agent_0_lidar"]
+                }
+            }
+        },
+        // {
+        //     "sim_1": {
+        //         "ego": "ego_lidar",
+        //         "sensor_permutations": {
+        //             "6_infra_2_agent": ["agent_0_lidar", "agent_1_lidar", "nw_lidar", "ne_lidar", "se_lidar", "sw_lidar"],
+        //             "4_infra": ["nw_lidar", "ne_lidar", "se_lidar"],
+        //             "2_infra": ["nw_lidar", "se_lidar"],
+        //             "2_agent": ["agent_0_lidar", "agent_1_lidar"],
+        //             "1_infra": ["se_lidar"],
+        //             "1_agent": ["agent_0_lidar"]
+        //         }
+        //     }
+        // },
+        // {
+        //     "sim_2": {
+        //         "ego": "ego_lidar",
+        //         "sensor_permutations": {
+        //             "6_infra_2_agent": ["agent_0_lidar", "agent_1_lidar", "nw_lidar", "ne_lidar", "se_lidar", "sw_lidar"],
+        //             "4_infra": ["nw_lidar", "ne_lidar", "se_lidar"],
+        //             "2_infra": ["nw_lidar", "se_lidar"],
+        //             "2_agent": ["agent_0_lidar", "agent_1_lidar"],
+        //             "1_infra": ["se_lidar"],
+        //             "1_agent": ["agent_0_lidar"]
+        //         }
+        //     }
+        // },
+        // {
+        //     "sim_3": {
+        //         "ego": "ego_lidar",
+        //         "sensor_permutations": {
+        //             "6_infra_2_agent": ["agent_0_lidar", "agent_1_lidar", "nw_lidar", "ne_lidar", "se_lidar", "sw_lidar"],
+        //             "4_infra": ["nw_lidar", "ne_lidar", "se_lidar"],
+        //             "2_infra": ["nw_lidar", "se_lidar"],
+        //             "2_agent": ["agent_0_lidar", "agent_1_lidar"],
+        //             "1_infra": ["se_lidar"],
+        //             "1_agent": ["agent_0_lidar"]
+        //         }
+        //     }
+        // },
+        {
+            // only for testing purposes. contains 
+            "sim_4": {
+                "ego": "ego_lidar",
+                "sensor_permutations": {
+                    "6_infra_2_agent": ["agent_0_lidar", "agent_1_lidar", "nw_lidar", "ne_lidar", "se_lidar", "sw_lidar"],
+                    "4_infra": ["nw_lidar", "ne_lidar", "se_lidar"],
+                    "2_infra": ["nw_lidar", "se_lidar"],
+                    "2_agent": ["agent_0_lidar", "agent_1_lidar"],
+                    "1_infra": ["se_lidar"],
+                    "1_agent": ["agent_0_lidar"]
+                }
+            }
+        }
+    ]
+}
+
+// Jsonc containing a parent array named "simulations" with entries "sim_0" through "sim_3", then each of these have an "ego" with a string "ego_lidar", and sub arrays named "sensor_permutations", then the items in "sensor_permutations" are dictionaries containing "6_infra_2_agent", "4_infra", "2_infra", "2_agent", "1_infra", "1_agent". each of these dicts has an array of strings containing sensor names: e.g. 6_infra_2_agent has all 6 infra and 4 agent ["agent_0_lidar", "agent_1_lidar", "nw_lidar", "ne_lidar", "se_lidar", "sw_lidar"] 2_infra has only ["nw_lidar", "se_lidar"], 2_agent has only ["agent_0_lidar", "agent_1_lidar"], 1_infra has ["se_lidar"], etc.
+// We have 24 combinations in total, since there are 4 simulations and 6 sensor permutations in each simulation.

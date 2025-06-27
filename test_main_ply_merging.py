@@ -6,7 +6,7 @@ import shutil
 
 if __name__ == "__main__":
     # Example setup
-    base_directory = "build/sim_1_output"
+    base_directory = "build/sim_4_output"
     output_directory = os.path.join(base_directory, "merged_infrastruct_lidar")
     # sensors = ["ego_lidar", "ne_lidar", "se_lidar", "sw_lidar", "nw_lidar"]
     sensors = ["ne_lidar", "se_lidar", "sw_lidar", "nw_lidar"]
