@@ -11,9 +11,9 @@ from utils.lidar_viewer import PointCloudViewer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Input data directory
-sensor_data_dir = "build/sim_1_output"
+sensor_data_dir = "build/sim_output/sim_4"
 # Output data/results directory
-out_dir = "test_registration_GPS_drifted_data.log"
+out_dir = "test_registration_GPS_drifted_data_sim_4.log"
 
 ego_drifted_file = os.path.join(out_dir, "ego_drifted_tum.txt")
 merged_frames_dir = os.path.join(out_dir, "merged_frames")
@@ -177,9 +177,9 @@ def eval_registration_results():
 def view_results():
     PointCloudViewer(path=merged_frames_dir).run()
 
-# run_registration()
+run_registration()
 # eval_registration_results()
-view_results()
+# view_results()
 
 # GOAL: Find max RMSE/min fitness a certain threshold (e.g. 0.1m, 2deg) is not exceeded
 
