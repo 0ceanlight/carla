@@ -11,6 +11,9 @@ def load_tum_file(file_path):
     Returns:
         list: A list of tuples, where each tuple contains:
               (timestamp, x, y, z, qx, qy, qz, qw)
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If the file format is invalid.
     """
 
     data = []
@@ -28,12 +31,15 @@ def load_tum_file(file_path):
 
 def save_tum_file(file_path, data):
     """
-    Save data to a TUM RGB-D trajectory file.
+    Save data to a TUM RGB-D trajectory file. This overwrites any existing file.
 
     Args:
         file_path (str): Path to the TUM file.
         data (list): A list of tuples, where each tuple contains:
                      (timestamp, x, y, z, qx, qy, qz, qw)
+    Raises:
+        ValueError: If any entry in data does not have exactly 8 elements.
+        IOError: If there is an issue writing to the file.
     """
 
     # Create directory if it doesn't exist
@@ -49,12 +55,16 @@ def save_tum_file(file_path, data):
 # function to append any number of poses (as optionally long list of tuples)
 def append_tum_poses(file_path, *poses):
     """
-    Append multiple poses to a TUM RGB-D trajectory file.
+    Append multiple poses to a TUM RGB-D trajectory file. Appends poses to the
+    end of the file if it exists, and creates the file if it doesn't exist.
 
     Args:
         file_path (str): Path to the TUM file.
         *poses: A variable number of tuples, where each tuple contains:
                 (timestamp, x, y, z, qx, qy, qz, qw)
+    Raises:
+        ValueError: If any pose does not have exactly 8 elements.
+        IOError: If there is an issue appending to the file.
     """
 
     # Create directory if it doesn't exist
@@ -69,28 +79,39 @@ def append_tum_poses(file_path, *poses):
                        f"{pose[4]:.6f} {pose[5]:.6f} {pose[6]:.6f} {pose[7]:.6f}\n")
 
 def append_right_handed_tum_pose(filename, transform, timestamp):
-        # Get the location of the vehicle
-        location = transform.location
-        rotation = transform.rotation
+    """
+    Append a single pose (given in right-handed coordinate system) to a TUM 
+    RGB-D trajectory file (which uses left-handed coordinates).
 
-        # Save the location to a file in TUM format
-        # TUM format: timestamp tx ty tz qx qy qz qw
-        # where qx, qy, qz, qw are the quaternion components 
-        # quaternions will require conversion because carla uses pitch, roll, yaw
-        
-        # TODO: is -pitch, -yaw conversion correct?
-        # ALTERNATIVE: swap qx and qz to account for carla's left handed 
-        # coordinate system, leave all else untouched
-        qx, qy, qz, qw = euler_to_quaternion(
-            rotation.roll,
-            -rotation.pitch,
-            -rotation.yaw
-        )
+    Args:
+        filename (str): Path to the TUM file.
+        transform: A CARLA transform object containing location and rotation.
+        timestamp (float): Timestamp for the pose.
+    Raises:
+        IOError: If there is an issue appending to the file.
+    """
+    # Get the location of the vehicle
+    location = transform.location
+    rotation = transform.rotation
 
-        x, y, z = location.x, location.y, location.z
+    # Save the location to a file in TUM format
+    # TUM format: timestamp tx ty tz qx qy qz qw
+    # where qx, qy, qz, qw are the quaternion components 
+    # quaternions will require conversion because carla uses pitch, roll, yaw
+    
+    # TODO: is -pitch, -yaw conversion correct?
+    # ALTERNATIVE: swap qx and qz to account for carla's left handed 
+    # coordinate system, leave all else untouched
+    qx, qy, qz, qw = euler_to_quaternion(
+        rotation.roll,
+        -rotation.pitch,
+        -rotation.yaw
+    )
 
-        # Save negative y to convert to right-handed coordinate system
-        append_tum_poses(filename, (timestamp, x, -y, z, qx, qy, qz, qw))
+    x, y, z = location.x, location.y, location.z
+
+    # Save negative y to convert to right-handed coordinate system
+    append_tum_poses(filename, (timestamp, x, -y, z, qx, qy, qz, qw))
 
 # Example usage:
 # data = load_tum_file("trajectory.txt")
