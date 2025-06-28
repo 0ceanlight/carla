@@ -79,7 +79,7 @@ def register_sim_permutation(sim_name: str, permutation_name: str, ego_sensor: s
     rmse_values = []
 
 
-    tqdm_desc = "🔁 Registering {sim_name}/{permutation} frames"
+    tqdm_desc = f"🔁 Registering {sim_name}/{permutation_name} frames"
     for i, (ego_frame, merged_frame) in tqdm(enumerate(matches), total=len(matches), desc=tqdm_desc, ncols=100):
         if ego_frame is None or merged_frame is None:
             logging.warning(f"⚠️ Skipping frame {i} due to missing ego frame {ego_frame} or merged frame {merged_frame}.")
