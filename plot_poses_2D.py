@@ -85,16 +85,15 @@ def calc_offset_margin(transform_arr_1, transform_arr_2, weight=1.0, max=None):
 
 
 # Input data directory
-sensor_data_dir = "build/sim_output/sim_4"
+sensor_data_ego_dir = "build/sim_output/sim_4/ego_lidar"
 # Output data/results directory
-out_dir = "test_registration_GPS_drifted_data_sim_4.log"
+reg_dir = "build/registered_sim_output/sim_4/1_agent"
 
-ego_ground_truth_file = os.path.join(sensor_data_dir, "ego_lidar/ground_truth_poses_tum.txt")
-ego_drifted_file = os.path.join(out_dir, "ego_drifted_tum.txt")
-merged_frames_dir = os.path.join(out_dir, "merged_frames")
-registration_est_file = os.path.join(out_dir, "registration_est_tum.txt")
-registration_fitness_file = os.path.join(out_dir, "registration_fit.txt")
-inlier_rmse_file = os.path.join(out_dir, "registration_inlier_rmse.txt")
+ego_ground_truth_file = os.path.join(sensor_data_ego_dir, "ground_truth_poses_tum.txt")
+ego_drifted_file = os.path.join(sensor_data_ego_dir, "gps_poses_tum.txt")
+registration_est_file = os.path.join(reg_dir, "reg_est_poses_tum.txt")
+registration_fitness_file = os.path.join(reg_dir, "reg_fitness.txt")
+inlier_rmse_file = os.path.join(reg_dir, "reg_inlier_rmse.txt")
 
 # TODO: Add functionality to tum file parser to load transforms?
 gt_poses = load_tum_file(ego_ground_truth_file)
@@ -102,9 +101,9 @@ gps_poses = load_tum_file(ego_drifted_file)
 reg_poses = load_tum_file(registration_est_file)
 
 # [1:] omits timestamp
-gt_transforms = [pose_to_matrix(pose[1:]) for pose in gt_poses][:56]
-gps_transforms = [pose_to_matrix(pose[1:]) for pose in gps_poses][:56]
-reg_transforms = [pose_to_matrix(pose[1:]) for pose in reg_poses][:56]
+gt_transforms = [pose_to_matrix(pose[1:]) for pose in gt_poses]
+gps_transforms = [pose_to_matrix(pose[1:]) for pose in gps_poses]
+reg_transforms = [pose_to_matrix(pose[1:]) for pose in reg_poses]
 
 max = 3.0 # Maximum error margin for better visualization
 
@@ -113,9 +112,9 @@ reg_err_margins = calc_offset_margin(gt_transforms, reg_transforms, max=max)
 
 # Load fitness and RMSE data (stored as 1 float per line in text files)
 with open(registration_fitness_file, 'r') as f:
-    fitness = [float(line.strip()) for line in f][:56]
+    fitness = [float(line.split(' ')[1].strip()) for line in f]
 with open(inlier_rmse_file, 'r') as f:
-    inlier_rmse = [float(line.strip()) for line in f][:56]
+    inlier_rmse = [float(line.split(' ')[1].strip()) for line in f]
 
 plot_poses(
     [gps_err_margins, reg_err_margins, fitness, inlier_rmse],
