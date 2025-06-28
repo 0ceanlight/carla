@@ -1,9 +1,10 @@
 import os
 import bisect
-from typing import List, Tuple, Dict, Optional, Callable
+from typing import List, Tuple, Optional
 from natsort import natsorted
 import numpy as np
 import logging
+from tqdm import tqdm, trange
 from scipy.spatial.transform import Rotation
 from .tum_file_parser import load_tum_file
 from .math_utils import quaternion_inverse, quaternion_multiply
@@ -248,6 +249,7 @@ class SensorDataMerger:
         """
         return self.matched_frames 
 
+    # TODO: Speed increase by preconmputing relative matches
     def get_relative_match_for_ego_index(
             self,
             index: int) -> Optional[List[Optional[Tuple[str, float, Tuple]]]]:
@@ -382,7 +384,7 @@ class SensorDataMerger:
     def save_all_merged_plys(self,
                              output_dir: str,
                              relative_match: bool = False,
-                             progress_callback: Optional[Callable[[], None]] = None):
+                             show_status: bool = True):
         """
         Merges all point cloud matches to their respective combined point 
         clouds, then saves these new point cloud frames to the given directory 
@@ -406,12 +408,12 @@ class SensorDataMerger:
                 Precomputed matches to use instead of computing internally.
             progress_callback (Optional[Callable[[], None]]):
                 Function to call after each frame is processed (e.g. for tqdm).
+            show_status (bool): If True, displays progress bar.
         """
         os.makedirs(output_dir, exist_ok=True)
-        for index in range(len(self.matched_frames)):
+        length = len(self.matched_frames)
+        for index in trange(length) if show_status else range(length):
             output_file = os.path.join(output_dir, f"{index}.ply")
             self.save_merged_ply_at_index(index,
                                           output_file,
                                           relative_match=relative_match)
-            if progress_callback:
-                progress_callback()
