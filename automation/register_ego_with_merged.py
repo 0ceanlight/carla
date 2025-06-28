@@ -2,6 +2,7 @@ import os
 import shutil
 import logging
 import numpy as np
+from tqdm import tqdm
 
 import config.dataset_structure_parser as dataset_parser
 from utils.sensor_data_merger import SensorDataMerger
@@ -75,7 +76,10 @@ def register_sim_permutation(sim_name: str, permutation: str, ego_sensor: str):
     fitness_values = []
     rmse_values = []
 
-    for i, (ego_frame, merged_frame) in enumerate(matches):
+
+
+    for i, (ego_frame, merged_frame) in tqdm(enumerate(matches)):
+        logging.debug(f"Processing frame {i}: ego_frame={ego_frame}, merged_frame={merged_frame}")
         if ego_frame is None or merged_frame is None:
             logging.warning(f"⚠️ Skipping frame {i} due to missing ego frame {ego_frame} or merged frame {merged_frame}.")
             continue
@@ -139,6 +143,7 @@ def main():
     for sim_name, sim_data in sim_configs.items():
         ego_sensor = sim_data["ego"]
         for permutation in sim_data.get("sensor_permutations", {}).keys():
+            logging.debug(f"Processing {sim_name}/{permutation} with ego sensor {ego_sensor}")
             try:
                 register_sim_permutation(sim_name, permutation, ego_sensor)
             except Exception as e:
