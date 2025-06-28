@@ -31,16 +31,18 @@ def merge_permutation(sim_name: str, permutation_name: str, sensor_list: list[st
     """
     sim_input_dir = os.path.join(SIM_INPUT_DIR, sim_name)
     output_dir_final = os.path.join(MERGED_OUTPUT_DIR, sim_name, permutation_name)
-    output_dir_temp = output_dir_final + ".part"
+    output_dir_tmp = output_dir_final + ".part"
 
     if os.path.exists(output_dir_final):
-        logging.info(f"✅ Skipping {sim_name}/{permutation_name} — already merged.")
+        logging.info(f"✅ Skipping {sim_name}/{permutation_name} - already completed.")
         return
-    if os.path.exists(output_dir_temp):
-        logging.warning(f"⚠️ Skipping {sim_name}/{permutation_name} — .part directory exists (incomplete run?)")
+    if os.path.exists(output_dir_tmp):
+        # Delete the temporary directory if it exists
+        logging.warning(f"⚠️ Overwriting .part directory for {sim_name}/{permutation_name} - probably left over from an incomplete run. ")
+        shutil.rmtree(output_dir_tmp)
         return
 
-    os.makedirs(os.path.join(output_dir_temp, "frames"), exist_ok=True)
+    os.makedirs(os.path.join(output_dir_tmp, "frames"), exist_ok=True)
     logging.info(f"🔄 Merging sensors for {sim_name}/{permutation_name}...")
 
     try:
@@ -49,18 +51,18 @@ def merge_permutation(sim_name: str, permutation_name: str, sensor_list: list[st
             sensors=sensor_list,
             max_timestamp_discrepancy=0.2
         )
-        merger.save_all_merged_plys(os.path.join(output_dir_temp, "frames"), relative_match=True)
+        merger.save_all_merged_plys(os.path.join(output_dir_tmp, "frames"), relative_match=True)
 
         # Copy GT pose file from first sensor
         reference_pose_file = os.path.join(sim_input_dir, sensor_list[0], "ground_truth_poses_tum.txt")
         if os.path.exists(reference_pose_file):
-            shutil.copy(reference_pose_file, os.path.join(output_dir_temp, "ground_truth_poses_tum.txt"))
+            shutil.copy(reference_pose_file, os.path.join(output_dir_tmp, "ground_truth_poses_tum.txt"))
             logging.info(f"📌 Saved GT poses from {sensor_list[0]}")
         else:
             logging.warning(f"⚠️ No ground truth pose file found for {sensor_list[0]}")
 
         # Finalize output
-        os.rename(output_dir_temp, output_dir_final)
+        os.rename(output_dir_tmp, output_dir_final)
         logging.info(f"✅ Finished merging {sim_name}/{permutation_name}")
 
     except Exception as e:

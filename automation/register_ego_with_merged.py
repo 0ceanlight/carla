@@ -26,7 +26,7 @@ MERGED_INPUT_DIR = os.path.join(BUILD_DIR, "gt_merged_sim_output")
 REG_OUTPUT_DIR = os.path.join(BUILD_DIR, "registered_sim_output")
 
 
-def register_sim_permutation(sim_name: str, permutation: str, ego_sensor: str):
+def register_sim_permutation(sim_name: str, permutation_name: str, ego_sensor: str):
     """
     Registers ego LiDAR point clouds to a merged point cloud (infrastructure or agent sensors).
 
@@ -35,18 +35,20 @@ def register_sim_permutation(sim_name: str, permutation: str, ego_sensor: str):
         permutation (str): Sensor permutation name, e.g., '2_agent'
         ego_sensor (str): Name of the ego sensor, e.g., 'ego_lidar'
     """
-    logging.debug(f"🚗 Loading data for {sim_name}/{permutation}...")
+    logging.debug(f"🚗 Loading data for {sim_name}/{permutation_name}...")
 
     ego_dir = os.path.join(SIM_INPUT_DIR, sim_name, ego_sensor)
-    merged_dir = os.path.join(MERGED_INPUT_DIR, sim_name, permutation)
-    output_dir_final = os.path.join(REG_OUTPUT_DIR, sim_name, permutation)
+    merged_dir = os.path.join(MERGED_INPUT_DIR, sim_name, permutation_name)
+    output_dir_final = os.path.join(REG_OUTPUT_DIR, sim_name, permutation_name)
     output_dir_tmp = output_dir_final + ".part"
 
     if os.path.exists(output_dir_final):
-        logging.info(f"✅ Skipping {sim_name}/{permutation} — already completed.")
+        logging.info(f"✅ Skipping {sim_name}/{permutation_name} - already completed.")
         return
     if os.path.exists(output_dir_tmp):
-        logging.warning(f"⚠️ Skipping {sim_name}/{permutation} — .part directory already exists (incomplete run?)")
+        # Delete the temporary directory if it exists
+        logging.warning(f"⚠️ Overwriting .part directory for {sim_name}/{permutation_name} - probably left over from an incomplete run. ")
+        shutil.rmtree(output_dir_tmp)
         return
 
     os.makedirs(os.path.join(output_dir_tmp, "frames"), exist_ok=True)
@@ -129,7 +131,7 @@ def register_sim_permutation(sim_name: str, permutation: str, ego_sensor: str):
 
     # Finalize by renaming directory
     os.rename(output_dir_tmp, output_dir_final)
-    logging.info(f"✅ Finished registration for {sim_name}/{permutation}")
+    logging.info(f"✅ Finished registration for {sim_name}/{permutation_name}")
 
 
 def main():
