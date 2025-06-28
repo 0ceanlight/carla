@@ -40,7 +40,6 @@ def merge_permutation(sim_name: str, permutation_name: str, sensor_list: list[st
         # Delete the temporary directory if it exists
         logging.warning(f"⚠️ Overwriting .part directory for {sim_name}/{permutation_name} - probably left over from an incomplete run. ")
         shutil.rmtree(output_dir_tmp)
-        return
 
     os.makedirs(os.path.join(output_dir_tmp, "frames"), exist_ok=True)
     logging.info(f"🔄 Merging sensors for {sim_name}/{permutation_name}...")
