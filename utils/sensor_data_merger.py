@@ -382,7 +382,6 @@ class SensorDataMerger:
     def save_all_merged_plys(self,
                              output_dir: str,
                              relative_match: bool = False,
-                             matches: Optional[List[List[Optional[Tuple[str, float, Tuple]]]]] = None,
                              progress_callback: Optional[Callable[[], None]] = None):
         """
         Merges all point cloud matches to their respective combined point 
