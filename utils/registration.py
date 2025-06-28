@@ -69,6 +69,9 @@ def register_multiple_point_clouds(
             - transforms applied to each point cloud (list of 4x4 np arrays)
             - average fitness and inlier RMSE of the registrations (float)
     """
+    # Silence Open3D warnings and debug messages
+    o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
+
     assert len(data) >= 2, "Need at least two point clouds for registration."
     assert all(isinstance(d, tuple) and len(d) == 3 for d in data), \
         "Each item in data must be a tuple (file_path, transform, color)."
@@ -153,7 +156,11 @@ def register_multiple_point_clouds(
 
     return (merged_cloud, transforms, avg_fitness, avg_inlier_rmse)
 
-
+# TODO: Use smaller voxel_size for finer feature matching (e.g., voxel_size = 
+# 0.5 or 0.3)? Current voxel downsample may be too coarse for RANSAC, which is
+# giving warnings like:
+# [Open3D WARNING] Too few correspondences (2087) after mutual filter, fall back
+# to original correspondences.
 def register_and_save_multiple_point_clouds(
     files_with_transforms: List[Tuple[str, Optional[Tuple[float, float, float, float, float, float, float]]]],
     output_file: str,
