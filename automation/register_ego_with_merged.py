@@ -35,7 +35,7 @@ def register_sim_permutation(sim_name: str, permutation: str, ego_sensor: str):
         permutation (str): Sensor permutation name, e.g., '2_agent'
         ego_sensor (str): Name of the ego sensor, e.g., 'ego_lidar'
     """
-    logging.info(f"🚗 Registering {sim_name}/{permutation}...")
+    logging.debug(f"🚗 Loading data for {sim_name}/{permutation}...")
 
     ego_dir = os.path.join(SIM_INPUT_DIR, sim_name, ego_sensor)
     merged_dir = os.path.join(MERGED_INPUT_DIR, sim_name, permutation)
@@ -77,9 +77,8 @@ def register_sim_permutation(sim_name: str, permutation: str, ego_sensor: str):
     rmse_values = []
 
 
-
-    for i, (ego_frame, merged_frame) in tqdm(enumerate(matches)):
-        logging.debug(f"Processing frame {i}: ego_frame={ego_frame}, merged_frame={merged_frame}")
+    tqdm_desc = "🔁 Registering {sim_name}/{permutation} frames"
+    for i, (ego_frame, merged_frame) in tqdm(enumerate(matches), total=len(matches), desc=tqdm_desc, ncols=100):
         if ego_frame is None or merged_frame is None:
             logging.warning(f"⚠️ Skipping frame {i} due to missing ego frame {ego_frame} or merged frame {merged_frame}.")
             continue
@@ -94,12 +93,13 @@ def register_sim_permutation(sim_name: str, permutation: str, ego_sensor: str):
             logging.warning(f"⚠️ Skipping frame {i} due to missing gps pose {gps_pose} or merged pose {merged_pose}.")
             continue
 
-        logging.info(f"🔁 Registering frame {i} at ego_ts={ego_ts:.6f} / merged_ts={merged_ts:.6f}")
         # optional TODO: remove colors
         # ego gets orange
         orange = (255, 165, 0)
         # merged gets blue
         blue = (0, 165, 255)
+
+        # logging.debug(f"🔁 Registering frame {i} of {sim_name}/{permutation} at ego_ts={ego_ts:.6f} / merged_ts={merged_ts:.6f}")
 
         try:
             merged_pcd, transforms, fitness, inlier_rmse = register_multiple_point_clouds(
