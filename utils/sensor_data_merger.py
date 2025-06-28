@@ -1,6 +1,6 @@
 import os
 import bisect
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Callable
 from natsort import natsorted
 import numpy as np
 import logging
@@ -296,7 +296,6 @@ class SensorDataMerger:
                     rel_tum_entry = rel_translation + rel_rotation
                     rel_frame.append(
                         (match_filename, match_timestamp, rel_tum_entry))
-                    print(f"rel: \t{rel_tum_entry}")
             return rel_frame
         logging.error(f"Index {index} out of range for matched frames.")
         return None
@@ -382,7 +381,9 @@ class SensorDataMerger:
 
     def save_all_merged_plys(self,
                              output_dir: str,
-                             relative_match: bool = False):
+                             relative_match: bool = False,
+                             matches: Optional[List[List[Optional[Tuple[str, float, Tuple]]]]] = None,
+                             progress_callback: Optional[Callable[[], None]] = None):
         """
         Merges all point cloud matches to their respective combined point 
         clouds, then saves these new point cloud frames to the given directory 
@@ -395,13 +396,17 @@ class SensorDataMerger:
         matched plys are at their respective absolute world coordinates (read 
         from respective TUM files). This is the default mode.
 
-        For absolute matches (relative_match = True): The ego ply origin remains
+        For relative matches (relative_match = True): The ego ply origin remains
         at 0 0 0, and the other point clouds are shifted into the ego point 
         cloud coordinate system using the poses in their respective TUM files.
 
         Args:
             output_dir (str): Directory to save the merged point clouds.
             relative_match (bool): If True, use relative matches instead of absolute.
+            matches (Optional[List[List[Optional[Tuple[str, float, Tuple]]]]]):
+                Precomputed matches to use instead of computing internally.
+            progress_callback (Optional[Callable[[], None]]):
+                Function to call after each frame is processed (e.g. for tqdm).
         """
         os.makedirs(output_dir, exist_ok=True)
         for index in range(len(self.matched_frames)):
@@ -409,3 +414,5 @@ class SensorDataMerger:
             self.save_merged_ply_at_index(index,
                                           output_file,
                                           relative_match=relative_match)
+            if progress_callback:
+                progress_callback()
