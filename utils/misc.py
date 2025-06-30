@@ -52,7 +52,7 @@ def strip_jsonc_comments(text: str) -> str:
 
 def simulate_gps_drift(poses, bias_std=0.15, noise_std=1.2, jump_prob=0.03, jump_std=3.5, seed=None):
     """
-    Apply realistic GPS drift to ground truth poses.
+    Apply realistic GPS drift to ground truth poses using research-backed parameters for semi-urban environments.
 
     Args:
         poses: np.ndarray of shape (N, 7) where each row is (x, y, z, qx, qy, qz, qw)
