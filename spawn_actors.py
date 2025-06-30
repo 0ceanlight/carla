@@ -13,7 +13,7 @@ import time
 import shutil
 import carla
 
-from utils.tum_file_parser import append_right_handed_tum_pose
+from utils.tum_file_parser import tum_append_right_handed_carla_transform
 from utils.misc import clear_directory
 
 import config.global_config_parser as global_config_parser
@@ -257,7 +257,7 @@ def create_lidar_callback(data_dir):
         # Number of seconds since Unix epoch, according to TUM format
         timestamp = start_time + point_cloud.timestamp
         # Save the vehicle pose to a file in TUM format
-        append_right_handed_tum_pose(tum_file, point_cloud.transform,
+        tum_append_right_handed_carla_transform(tum_file, point_cloud.transform,
                                      timestamp)
 
         # increment frame number
@@ -324,7 +324,7 @@ def create_camera_callback(data_dir):
         # Number of seconds since Unix epoch, according to TUM format
         timestamp = start_time + camera_image.timestamp
         # Save the vehicle pose to a file in TUM format
-        append_right_handed_tum_pose(tum_file, camera_image.transform,
+        tum_append_right_handed_carla_transform(tum_file, camera_image.transform,
                                      timestamp)
 
         # increment frame number

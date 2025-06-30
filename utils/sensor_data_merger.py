@@ -6,7 +6,7 @@ import numpy as np
 import logging
 from tqdm import tqdm, trange
 from scipy.spatial.transform import Rotation
-from .tum_file_parser import load_tum_file
+from .tum_file_parser import tum_load_as_tuples
 from .math_utils import quaternion_inverse, quaternion_multiply
 from .merge_plys import combine_point_clouds_with_poses
 
@@ -88,7 +88,7 @@ class SensorDataMerger:
             tum_path = os.path.join(sensor_path, 'ground_truth_poses_tum.txt')
             frames_path = os.path.join(sensor_path, 'frames')
 
-            tum_data = load_tum_file(tum_path)
+            tum_data = tum_load_as_tuples(tum_path)
             filenames = natsorted(
                 [f for f in os.listdir(frames_path) if f.endswith('.ply')],
                 key=lambda x: int(x.split('.')[0]))

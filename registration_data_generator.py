@@ -88,7 +88,7 @@ def run_registration():
 
     # Save drifted ego poses to TUM file
     drifted_ego_tum_data = [(timestamp,) + tuple(pose) for timestamp, pose in zip(ego_timestamps, drifted_ego_poses)]
-    save_tum_file(ego_drifted_file, drifted_ego_tum_data)
+    tum_save_tuples(ego_drifted_file, drifted_ego_tum_data)
 
     show_average_difference(ego_drifted_file, os.path.join(sensor_data_dir, "ego_lidar/ground_truth_poses_tum.txt"))
 
@@ -156,7 +156,7 @@ def run_registration():
     np.savetxt(inlier_rmse_file, inlier_rmse_values, fmt='%.6f')
 
     # Save the registration results to TUM file
-    save_tum_file(registration_est_file, post_registration_ego_poses)
+    tum_save_tuples(registration_est_file, post_registration_ego_poses)
 
 
 def eval_registration_results():

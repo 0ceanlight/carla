@@ -1,7 +1,8 @@
 import os
+import open3d as o3d
 from .math_utils import euler_to_quaternion
 
-def load_tum_file(file_path):
+def tum_load_as_tuples(file_path):
     """
     Load a TUM RGB-D trajectory file.
 
@@ -29,7 +30,7 @@ def load_tum_file(file_path):
             data.append((timestamp, x, y, z, qx, qy, qz, qw))
     return data
 
-def save_tum_file(file_path, data):
+def tum_save_tuples(file_path, list_of_tuples):
     """
     Save data to a TUM RGB-D trajectory file. This overwrites any existing file.
 
@@ -46,14 +47,14 @@ def save_tum_file(file_path, data):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     
     with open(file_path, 'w') as file:
-        for entry in data:
+        for entry in list_of_tuples:
             if len(entry) != 8:
                 raise ValueError(f"Invalid entry format: {entry}")
             file.write(f"{entry[0]:.6f} {entry[1]:.6f} {entry[2]:.6f} {entry[3]:.6f} "
                        f"{entry[4]:.6f} {entry[5]:.6f} {entry[6]:.6f} {entry[7]:.6f}\n")
 
 # function to append any number of poses (as optionally long list of tuples)
-def append_tum_poses(file_path, *poses):
+def tum_append_tuples(file_path, *poses):
     """
     Append multiple poses to a TUM RGB-D trajectory file. Appends poses to the
     end of the file if it exists, and creates the file if it doesn't exist.
@@ -78,7 +79,7 @@ def append_tum_poses(file_path, *poses):
             file.write(f"{pose[0]:.6f} {pose[1]:.6f} {pose[2]:.6f} {pose[3]:.6f} "
                        f"{pose[4]:.6f} {pose[5]:.6f} {pose[6]:.6f} {pose[7]:.6f}\n")
 
-def append_right_handed_tum_pose(filename, transform, timestamp):
+def tum_append_right_handed_carla_transform(filename, transform, timestamp):
     """
     Append a single pose (given in right-handed coordinate system) to a TUM 
     RGB-D trajectory file (which uses left-handed coordinates).
@@ -111,9 +112,21 @@ def append_right_handed_tum_pose(filename, transform, timestamp):
     x, y, z = location.x, location.y, location.z
 
     # Save negative y to convert to right-handed coordinate system
-    append_tum_poses(filename, (timestamp, x, -y, z, qx, qy, qz, qw))
+    tum_append_tuples(filename, (timestamp, x, -y, z, qx, qy, qz, qw))
 
-# Example usage:
-# data = load_tum_file("trajectory.txt")
-# save_tum_file("output_trajectory.txt", data)
-# append_tum_file("output_trajectory.txt", (1234567890.123456, 1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 1.0))
+def tum_save_matrices(path, matrix_pose_list):
+    """
+    Save a list of 4x4 transformation matrices as a TUM-formatted trajectory.
+
+    Args:
+        path (str): Output file path
+        pose_list (list): List of 4x4 numpy arrays representing poses
+    """
+    tum_data = []
+    t = 0.0
+    for pose in matrix_pose_list:
+        trans = pose[:3, 3]
+        quat = o3d.geometry.get_quaternion_from_rotation_matrix(pose[:3, :3])
+        tum_data.append((t, *trans, quat[1], quat[2], quat[3], quat[0]))
+        t += 0.1  # Fixed time step assumption
+    tum_save_tuples(path, tum_data)

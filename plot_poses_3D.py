@@ -1,7 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from utils.tum_file_parser import load_tum_file
+from utils.tum_file_parser import tum_load_as_tuples
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -46,9 +46,9 @@ registration_fitness_file = os.path.join(out_dir, "registration_fit.txt")
 inlier_rmse_file = os.path.join(out_dir, "registration_inlier_rmse.txt")
 
 # Example usage
-gt_set = load_tum_file(ego_ground_truth_file)
-gps_set = load_tum_file(ego_drifted_file)
-reg_set = load_tum_file(registration_est_file)
+gt_set = tum_load_as_tuples(ego_ground_truth_file)
+gps_set = tum_load_as_tuples(ego_drifted_file)
+reg_set = tum_load_as_tuples(registration_est_file)
 
 # Load fitness and RMSE data (stored as 1 float per line in text files)
 with open(registration_fitness_file, 'r') as f:

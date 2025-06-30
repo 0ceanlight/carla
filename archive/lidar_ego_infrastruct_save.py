@@ -24,7 +24,7 @@ import weakref
 import time
 
 from utils.math_utils import euler_to_quaternion
-from utils.tum_file_parser import append_tum_poses, append_right_handed_tum_pose
+from utils.tum_file_parser import tum_append_tuples, tum_append_right_handed_carla_transform
 
 
 # ==============================================================================
@@ -105,7 +105,7 @@ def lidar_callback(point_cloud, data_dir):
     filename = os.path.join(data_dir, f'ground_truth_poses_tum.txt')
     timestamp = point_cloud.timestamp
     # Save the vehicle pose to a file in TUM format
-    append_right_handed_tum_pose(point_cloud.transform, timestamp, filename)
+    tum_append_right_handed_carla_transform(point_cloud.transform, timestamp, filename)
 
 def imu_callback(imu_data, data_dir):
     # Get current unix timestamp in ms as int

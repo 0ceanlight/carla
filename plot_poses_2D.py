@@ -2,7 +2,7 @@ import os
 import matplotlib.pyplot as plt
 import mplcursors
 from mpl_toolkits.mplot3d import Axes3D
-from utils.tum_file_parser import load_tum_file
+from utils.tum_file_parser import tum_load_as_tuples
 from utils.math_utils import *
 
 # Prompt: Implement the following function header. Flesh out the function to 
@@ -83,11 +83,13 @@ def calc_offset_margin(transform_arr_1, transform_arr_2, weight=1.0, max=None):
 
     return ret
 
+base_dir = "build.old.log"
+base_dir = "build"
 
 # Input data directory
-sensor_data_ego_dir = "build/sim_output/sim_4/ego_lidar"
+sensor_data_ego_dir = os.path.join(base_dir, "sim_output/sim_4/ego_lidar")
 # Output data/results directory
-reg_dir = "build/registered_sim_output/sim_4/1_agent"
+reg_dir = os.path.join(base_dir, "registered_sim_output/sim_4/6_infra_2_agent")
 
 ego_ground_truth_file = os.path.join(sensor_data_ego_dir, "ground_truth_poses_tum.txt")
 ego_drifted_file = os.path.join(sensor_data_ego_dir, "gps_poses_tum.txt")
@@ -96,9 +98,9 @@ registration_fitness_file = os.path.join(reg_dir, "reg_fitness.txt")
 inlier_rmse_file = os.path.join(reg_dir, "reg_inlier_rmse.txt")
 
 # TODO: Add functionality to tum file parser to load transforms?
-gt_poses = load_tum_file(ego_ground_truth_file)
-gps_poses = load_tum_file(ego_drifted_file)
-reg_poses = load_tum_file(registration_est_file)
+gt_poses = tum_load_as_tuples(ego_ground_truth_file)
+gps_poses = tum_load_as_tuples(ego_drifted_file)
+reg_poses = tum_load_as_tuples(registration_est_file)
 
 # [1:] omits timestamp
 gt_transforms = [pose_to_matrix(pose[1:]) for pose in gt_poses]

@@ -7,7 +7,7 @@ from tqdm import tqdm
 import config.dataset_structure_parser as dataset_parser
 from utils.sensor_data_merger import SensorDataMerger
 from utils.registration import register_multiple_point_clouds, save_point_cloud
-from utils.tum_file_parser import load_tum_file, save_tum_file
+from utils.tum_file_parser import tum_load_as_tuples, tum_save_tuples
 from utils.math_utils import pose_to_matrix, matrix_to_pose
 
 # Setup logging
@@ -53,9 +53,9 @@ def register_sim_permutation(sim_name: str, permutation_name: str, ego_sensor: s
     os.makedirs(os.path.join(output_dir_tmp, "frames"), exist_ok=True)
 
     # Load poses
-    ego_gps_data = load_tum_file(os.path.join(ego_dir, "gps_poses_tum.txt"))
-    ego_gt_data = load_tum_file(os.path.join(ego_dir, "ground_truth_poses_tum.txt"))
-    merged_gt_data = load_tum_file(os.path.join(merged_dir, "ground_truth_poses_tum.txt"))
+    ego_gps_data = tum_load_as_tuples(os.path.join(ego_dir, "gps_poses_tum.txt"))
+    ego_gt_data = tum_load_as_tuples(os.path.join(ego_dir, "ground_truth_poses_tum.txt"))
+    merged_gt_data = tum_load_as_tuples(os.path.join(merged_dir, "ground_truth_poses_tum.txt"))
 
     # Use relative paths for sensor data merger
     ego_rel_path = os.path.relpath(ego_dir, start=BUILD_DIR)
@@ -78,7 +78,7 @@ def register_sim_permutation(sim_name: str, permutation_name: str, ego_sensor: s
     rmse_values = []
 
 
-    tqdm_desc = f"🔁 Registering {sim_name}/{permutation_name} frames"
+    tqdm_desc = f"🔁 Registering {sim_name}/{permutation_name}"
     for i, (ego_frame, merged_frame) in tqdm(enumerate(matches), total=len(matches), desc=tqdm_desc, ncols=100):
         if ego_frame is None or merged_frame is None:
             logging.warning(f"⚠️ Skipping frame {i} due to missing ego frame {ego_frame} or merged frame {merged_frame}.")
@@ -123,8 +123,8 @@ def register_sim_permutation(sim_name: str, permutation_name: str, ego_sensor: s
         rmse_values.append((ego_ts, inlier_rmse))
 
     # Save all results
-    save_tum_file(os.path.join(output_dir_tmp, "reg_est_poses_tum.txt"), reg_poses)
-    save_tum_file(os.path.join(output_dir_tmp, "ground_truth_poses_tum.txt"), ego_gt_data)
+    tum_save_tuples(os.path.join(output_dir_tmp, "reg_est_poses_tum.txt"), reg_poses)
+    tum_save_tuples(os.path.join(output_dir_tmp, "ground_truth_poses_tum.txt"), ego_gt_data)
     np.savetxt(os.path.join(output_dir_tmp, "reg_fitness.txt"), fitness_values, fmt='%.6f')
     np.savetxt(os.path.join(output_dir_tmp, "reg_inlier_rmse.txt"), rmse_values, fmt='%.6f')
 

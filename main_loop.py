@@ -19,7 +19,7 @@ import sys
 import time
 
 from utils.math_utils import euler_to_quaternion
-from utils.tum_file_parser import append_tum_poses
+from utils.tum_file_parser import tum_append_tuples
 from utils.misc import clear_directory
 import config.global_config_parser as global_config_parser
 import config.sim_config_parser as sim_config_parser
@@ -225,6 +225,8 @@ def game_loop(args):
                             logging.info(f'Waiting for sensors to finish saving data... {max_wait_time} seconds left.')
                             time.sleep(1)
                             max_wait_time -= 1
+                    
+                    time.sleep(3) # Wait a bit more just for good measure
 
                 break # Main sim loop
             # END MAIN SIM LOOP ----------------------------------------------------

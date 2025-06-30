@@ -4,7 +4,7 @@ import logging
 
 import config.dataset_structure_parser as dataset_parser
 from utils.misc import simulate_gps_drift
-from utils.tum_file_parser import load_tum_file, save_tum_file
+from utils.tum_file_parser import tum_load_as_tuples, tum_save_tuples
 
 # Setup logging
 logging.basicConfig(
@@ -31,14 +31,14 @@ def generate_gps_drift_for_sim(sim_name: str, ego_sensor: str):
     logging.info(f"📡 Generating GPS-drifted poses for {sim_name}/{ego_sensor}")
 
     try:
-        raw_data = load_tum_file(gt_file)
+        raw_data = tum_load_as_tuples(gt_file)
         timestamps = np.array([entry[0] for entry in raw_data])
         poses = np.array([entry[1:] for entry in raw_data])  # shape (N, 7)
 
         drifted_poses = simulate_gps_drift(poses)
 
         drifted_data = [(ts,) + tuple(pose) for ts, pose in zip(timestamps, drifted_poses)]
-        save_tum_file(gps_file, drifted_data)
+        tum_save_tuples(gps_file, drifted_data)
 
         logging.info(f"✅ Saved GPS-drifted poses to {gps_file}")
     except Exception as e:

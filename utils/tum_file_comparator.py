@@ -2,7 +2,7 @@ import math
 import numpy as np
 from typing import List, Tuple, Optional
 from .math_utils import quaternion_inverse, quaternion_multiply
-from .tum_file_parser import load_tum_file
+from .tum_file_parser import tum_load_as_tuples
 
 
 def quaternion_angle_difference(q1, q2):
@@ -216,8 +216,8 @@ def show_all_differences(file1: str, file2: str) -> None:
         file1 (str): Path to the first TUM file.
         file2 (str): Path to the second TUM file.
     """
-    seq1 = load_tum_file(file1)
-    seq2 = load_tum_file(file2)
+    seq1 = tum_load_as_tuples(file1)
+    seq2 = tum_load_as_tuples(file2)
     aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
     differences = compute_differences(aligned_seq1, aligned_seq2)
     print("Timestamp\tTimeDiff\tTransDiff\tRotDiff(deg)")
@@ -233,8 +233,8 @@ def show_average_difference(file1: str, file2: str) -> None:
         file1 (str): Path to the first TUM file.
         file2 (str): Path to the second TUM file.
     """
-    seq1 = load_tum_file(file1)
-    seq2 = load_tum_file(file2)
+    seq1 = tum_load_as_tuples(file1)
+    seq2 = tum_load_as_tuples(file2)
     aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
     differences = compute_differences(aligned_seq1, aligned_seq2)
     avg_trans_diff, avg_rot_diff = compute_average_difference(differences)
