@@ -179,42 +179,56 @@ def gtsam_pose3_to_pose(
     rotation = (q.x(), q.y(), q.z(), q.w())
     return (*translation, *rotation)
 
-# def gtsam_pose3_to_pose(
-#     pose: Pose3
-# ) -> tuple[float, float, float, float, float, float, float]:
-#     """
-#     Convert a GTSAM Pose3 object to a pose (translation + quaternion).
 
-#     Parameters:
-#         pose: GTSAM Pose3 object
+def align_matrix_list_to_matrix(matrix_list, matrix):
+    """
+    Align a trajectory (list of matrices) to start at a given single transform (matrix).
 
-#     Returns:
-#         Tuple (x, y, z, qx, qy, qz, qw)
-#     """
-#     return (
-#         pose.x(),
-#         pose.y(),
-#         pose.z(),
-#         pose.rotation().x(),
-#         pose.rotation().y(),
-#         pose.rotation().z(),
-#         pose.rotation().w()
-#     )
+    Args:
+        matrix_list (list): Trajectory to align as list of 4x4 np.ndarrays.
+        matrix (np.ndarray): Matrix to align the list to.
+    """
+    T_list0 = matrix_list[0]
+    T_start0 = matrix
+    T_align = T_start0 @ np.linalg.inv(T_list0)
+
+    aligned_matrices = [T_align @ T for T in matrix_list]
+    return aligned_matrices
 
 
-# def pose_to_gtsam_pose3(
-#     pose: tuple[float, float, float, float, float, float, float]
-# ) -> Pose3:
-#     """
-#     Convert a pose (translation + quaternion) to a GTSAM Pose3 object.
+def align_pose_list_to_pose(pose_list, pose):
+    """ Align trajectory (list of poses) to start at a given single transform (pose).
+    
+    Args:
+        poses (list): List of poses as (x, y, z, qx, qy, qz, qw).
+        pose (tuple): Pose as (x, y, z, qx, qy, qz, qw) to align to.
+    Returns:
+        list: Aligned poses in the same format.
+    """
+    from utils.math_utils import pose_to_matrix, matrix_to_pose
+    matrix = pose_to_matrix(pose)
+    matrix_list = [pose_to_matrix(p) for p in pose_list]
+    aligned_matrices = align_matrix_list_to_matrix(matrix_list, matrix)
+    return [matrix_to_pose(m) for m in aligned_matrices]
 
-#     Parameters:
-#         pose: Tuple (x, y, z, qx, qy, qz, qw)
 
-#     Returns:
-#         GTSAM Pose3 object
-#     """
-#     x, y, z, qx, qy, qz, qw = pose
-#     rotation = Rot3.Quaternion(qw, qx, qy, qz)
-#     translation = Point3(x, y, z)
-#     return Pose3(rotation, translation)
+def align_slam_to_gps_timestamps(slam_poses, gps_poses):
+    """
+    Align SLAM poses to GPS timestamps.
+
+    Args:
+        slam_poses (list): List of SLAM poses in TUM format.
+        gps_poses (list): List of GPS poses in TUM format.
+
+    Returns:
+        list: Aligned SLAM poses with GPS timestamps.
+    """
+    from utils.tum_file_comparator import find_closest_entry
+
+    aligned_slam = []
+    for gps_pose in gps_poses:
+        closest_slam = find_closest_entry(gps_pose[0], slam_poses)
+        if closest_slam:
+            aligned_slam.append((gps_pose[0], *closest_slam[1:]))
+
+    return aligned_slam

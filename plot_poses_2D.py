@@ -1,7 +1,6 @@
 import os
 from utils.tum_file_parser import tum_load_as_matrices
 from utils.math_utils import *
-from utils.fusion_graph_utils import align_matrix_list_to_matrix
 from utils.data_viz import get_split_pose_plot
 
 
