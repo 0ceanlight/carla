@@ -3,10 +3,8 @@ import matplotlib.pyplot as plt
 import mplcursors
 from mpl_toolkits.mplot3d import Axes3D
 
+LINE_WIDTH = 2.5
 
-import matplotlib.pyplot as plt
-import mplcursors
-from mpl_toolkits.mplot3d import Axes3D
 
 def get_pose_plot(pose_sets, colors, labels, min_x=None, max_x=None, min_y=None, max_y=None, title=None):
     """
@@ -40,7 +38,7 @@ def get_pose_plot(pose_sets, colors, labels, min_x=None, max_x=None, min_y=None,
         x = list(range(len(pose_set)))
         y = pose_set
         # scatter = plt.scatter(x, y, color=color, label=label)
-        plot = plt.plot(x, y, color=color, linewidth=2.0, alpha=0.7)  # adjust line
+        plot = plt.plot(x, y, color=color, linewidth=LINE_WIDTH, alpha=0.7)  # adjust line
 
         # cursor = mplcursors.cursor(scatter, hover=True)
         cursor = mplcursors.cursor(plot, hover=True)
@@ -97,7 +95,7 @@ def get_split_pose_plot(
     # Plot top graph (Positional errors)
     for data, color, label in zip(top_pose_sets, top_colors, top_labels):
         x = list(range(len(data)))
-        line, = ax1.plot(x, data, color=color, label=label, linewidth=2.0, alpha=0.7)
+        line, = ax1.plot(x, data, color=color, label=label, linewidth=LINE_WIDTH, alpha=0.7)
         cursor = mplcursors.cursor(line, hover=True)
         cursor.connect("add", lambda sel, c=color: (
             sel.annotation.set_text(f"x={int(sel.target[0])}, y={sel.target[1]:.3f}"),
@@ -117,7 +115,7 @@ def get_split_pose_plot(
     # Plot bottom graph (Fitness and RMSE)
     for data, color, label in zip(bottom_pose_sets, bottom_colors, bottom_labels):
         x = list(range(len(data)))
-        line, = ax2.plot(x, data, color=color, label=label, linewidth=2.0, alpha=0.7)
+        line, = ax2.plot(x, data, color=color, label=label, linewidth=LINE_WIDTH, alpha=0.7)
         cursor = mplcursors.cursor(line, hover=True)
         cursor.connect("add", lambda sel, c=color: (
             sel.annotation.set_text(f"x={int(sel.target[0])}, y={sel.target[1]:.3f}"),
