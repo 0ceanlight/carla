@@ -1,5 +1,7 @@
 import math
 import numpy as np
+import gtsam
+from gtsam import Pose3, Rot3, Point3
 from scipy.spatial.transform import Rotation as R
 
 
@@ -59,7 +61,12 @@ def pose_to_matrix(
     Returns:
         4x4 transformation matrix as np.ndarray
     """
-    x, y, z, qx, qy, qz, qw = pose
+    try:
+        x, y, z, qx, qy, qz, qw = pose
+    except ValueError:
+        print(pose)
+        raise ValueError("Pose must be a tuple of (x, y, z, qx, qy, qz, qw)")
+
     T = np.eye(4)
     T[:3, :3] = R.from_quat([qx, qy, qz, qw]).as_matrix()
     T[:3, 3] = [x, y, z]
@@ -110,3 +117,104 @@ def pose_difference(
     rotation_diff_deg = relative_rot.magnitude() * 180.0 / np.pi
 
     return translation_diff, rotation_diff_deg
+
+
+def calc_offset_margin(transform_arr_1, transform_arr_2, weight=1.0):
+    """
+    Calculate the absolute offset margin per-pose between two lists of transforms.
+
+    Args:
+        transform_arr_1 (list): First list of N transforms (as 4x4 matrices).
+        transform_arr_2 (list): Second list of N transforms (as 4x4 matrices).
+        weight (float): Weighting factor for the error margin.
+    
+    Returns:
+        list: N float values representing the offset margin for each pose pair.
+    """
+    if len(transform_arr_1) != len(transform_arr_2):
+        raise ValueError("Both transform arrays must have the same length.")
+    
+    diffs = []
+
+    for i, j in zip(transform_arr_1, transform_arr_2):
+        trans, _ = pose_difference(i, j)
+        # TODO: consider rotation difference?
+        diffs.append(trans * weight)
+
+    return diffs
+
+
+def pose_to_gtsam_pose3(
+    pose: tuple[float, float, float, float, float, float, float]
+) -> Pose3:
+    """
+    Convert a pose (translation + quaternion) to a GTSAM Pose3 object.
+
+    Parameters:
+        pose: Tuple (x, y, z, qx, qy, qz, qw)
+
+    Returns:
+        GTSAM Pose3 object
+    """
+    x, y, z, qx, qy, qz, qw = pose
+    return Pose3(Rot3.Quaternion(qx, qy, qz, qw), Point3(x, y, z))
+
+
+def gtsam_pose3_to_pose(
+    pose: Pose3
+) -> tuple[float, float, float, float, float, float, float]:
+    """
+    Convert a GTSAM Pose3 object to a pose (translation + quaternion).
+
+    Parameters:
+        pose: GTSAM Pose3 object
+
+    Returns:
+        Tuple (x, y, z, qx, qy, qz, qw)
+    """
+    translation = (pose.x(), pose.y(), pose.z())
+    # import IPython
+    # IPython.embed()
+    q = pose.rotation().toQuaternion()  # returns (qx, qy, qz, qw)
+    rotation = (q.x(), q.y(), q.z(), q.w())
+    return (*translation, *rotation)
+
+# def gtsam_pose3_to_pose(
+#     pose: Pose3
+# ) -> tuple[float, float, float, float, float, float, float]:
+#     """
+#     Convert a GTSAM Pose3 object to a pose (translation + quaternion).
+
+#     Parameters:
+#         pose: GTSAM Pose3 object
+
+#     Returns:
+#         Tuple (x, y, z, qx, qy, qz, qw)
+#     """
+#     return (
+#         pose.x(),
+#         pose.y(),
+#         pose.z(),
+#         pose.rotation().x(),
+#         pose.rotation().y(),
+#         pose.rotation().z(),
+#         pose.rotation().w()
+#     )
+
+
+# def pose_to_gtsam_pose3(
+#     pose: tuple[float, float, float, float, float, float, float]
+# ) -> Pose3:
+#     """
+#     Convert a pose (translation + quaternion) to a GTSAM Pose3 object.
+
+#     Parameters:
+#         pose: Tuple (x, y, z, qx, qy, qz, qw)
+
+#     Returns:
+#         GTSAM Pose3 object
+#     """
+#     x, y, z, qx, qy, qz, qw = pose
+#     rotation = Rot3.Quaternion(qw, qx, qy, qz)
+#     translation = Point3(x, y, z)
+#     return Pose3(rotation, translation)

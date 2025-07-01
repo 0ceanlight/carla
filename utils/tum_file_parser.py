@@ -1,6 +1,7 @@
 import os
 import open3d as o3d
-from .math_utils import euler_to_quaternion
+import numpy as np
+from .math_utils import euler_to_quaternion, matrix_to_pose, pose_to_matrix
 
 def tum_load_as_tuples(file_path):
     """
@@ -114,19 +115,40 @@ def tum_append_right_handed_carla_transform(filename, transform, timestamp):
     # Save negative y to convert to right-handed coordinate system
     tum_append_tuples(filename, (timestamp, x, -y, z, qx, qy, qz, qw))
 
+def tum_load_as_matrices(path):
+    """
+    Load a TUM RGB-D trajectory file and convert it to a list of tuples of 
+    timestamps and 4x4 transformation matrices.
+
+    Args:
+        path (str): Path to the TUM file.
+    Returns:
+        list (List[Tuple[float, np.ndarray]]): A list of tuples of timestamps and 4x4 
+        numpy arrays representing the poses.
+    """
+    tum_data = tum_load_as_tuples(path)
+    matrix_entries = []
+    for entry in tum_data:
+        timestamp = entry[0]
+        pose = entry[1:]
+        matrix = pose_to_matrix(pose)
+        matrix_entries.append((timestamp, matrix))
+
+    return matrix_entries
+
+
 def tum_save_matrices(path, matrix_pose_list):
     """
     Save a list of 4x4 transformation matrices as a TUM-formatted trajectory.
 
     Args:
         path (str): Output file path
-        pose_list (list): List of 4x4 numpy arrays representing poses
+        pose_list (List[Tuple[float, np.ndarray]]): List of tuples containing 
+        timestamp and 4x4 numpy arrays.
     """
     tum_data = []
-    t = 0.0
-    for pose in matrix_pose_list:
-        trans = pose[:3, 3]
-        quat = o3d.geometry.get_quaternion_from_rotation_matrix(pose[:3, :3])
-        tum_data.append((t, *trans, quat[1], quat[2], quat[3], quat[0]))
-        t += 0.1  # Fixed time step assumption
-    tum_save_tuples(path, tum_data)
+    for timestamp, matrix in matrix_pose_list:
+        pose = matrix_to_pose(matrix)
+        tum_data.append((timestamp, *pose))
+
+    tum_save_tuples(path, *tum_data)

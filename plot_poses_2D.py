@@ -1,116 +1,44 @@
 import os
-import matplotlib.pyplot as plt
-import mplcursors
-from mpl_toolkits.mplot3d import Axes3D
-from utils.tum_file_parser import tum_load_as_tuples
+from utils.tum_file_parser import tum_load_as_matrices
 from utils.math_utils import *
+from utils.fusion_graph_utils import align_matrix_list_to_matrix
+from utils.data_viz import get_split_pose_plot
 
-# Prompt: Implement the following function header. Flesh out the function to 
-# display a 2D graph of the input data, plotting the ith element as a point
-# (x, y) = (i, data_value: float). Additionally, color the points of each list
-# with the respective given colors, and add a key, labeled with the respective 
-# labels. Ideally, the graph should support hovering to view the y values at the
-# x value being hovered over (with numbers displayed in respective colors).
-# Update the docstring so it's nicely descriptive and formatted correctly.
-def plot_poses(pose_sets, colors, labels):
-    """
-    Plot multiple sequences of float values as 2D scatter plots.
-
-    Each set of values in `pose_sets` is plotted such that each element is a point
-    (x, y) = (i, value), where i is the index of the value in the list.
-
-    Parameters:
-    - pose_sets (list of list of float): A list where each inner list is a sequence
-      of float values to be plotted.
-    - colors (list of str): A list of color names or codes for each set.
-    - labels (list of str): A list of labels for each dataset to be used in the legend.
-
-    Features:
-    - Each dataset is displayed in its respective color.
-    - A legend (key) is shown using the provided labels.
-    - Hovering over any point displays its (x, y) coordinates, with annotation colored
-      to match the data point.
-    """
-
-    assert len(pose_sets) == len(colors) == len(labels), \
-        "Input arrays must be of the same length."
-
-    plt.figure(figsize=(10, 6))
-
-    for pose_set, color, label in zip(pose_sets, colors, labels):
-        x = list(range(len(pose_set)))
-        y = pose_set
-        scatter = plt.scatter(x, y, color=color, label=label)
-        # plt.plot(x, y, color=color, linewidth=1.0, alpha=0.7)  # adjust line
-
-        cursor = mplcursors.cursor(scatter, hover=True)
-        cursor.connect("add", lambda sel, c=color: (
-            sel.annotation.set_text(f"x={int(sel.target[0])}, y={sel.target[1]:.3f}"),
-            sel.annotation.get_bbox_patch().set(fc=c, alpha=0.8)
-        ))
-
-    plt.title("Pose Sets | Note: Cropped to max 3.0")
-    plt.xlabel("Frame Index")
-    plt.ylabel("Distance from ground truth (m) / Fitness / RMSE")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-
-def calc_offset_margin(transform_arr_1, transform_arr_2, weight=1.0, max=None):
-    """
-    Calculate offset of each entry in array...
-
-    Parameters:
-        2 lists containing 4x4 np.ndarrays as entries
-    Returns:
-        float
-    """
-    
-    ret = []
-
-    for i, j in zip(transform_arr_1, transform_arr_2):
-        trans, rot = pose_difference(i, j)
-        # TODO: consider degree diff separately?
-        # err = (rot + trans) * weight
-        err = trans * weight
-
-        if max is not None and err > max:
-            err = max
-
-        ret.append(err)
-
-    return ret
 
 base_dir = "build.old.log"
 base_dir = "build"
+sim = "sim_0"
+permutation = "6_infra_2_agent"
+# permutation = "2_agent"
+# permutation = "1_infra"
+# permutation = "1_agent"
 
 # Input data directory
-sensor_data_ego_dir = os.path.join(base_dir, "sim_output/sim_4/ego_lidar")
+sensor_data_ego_dir = os.path.join(base_dir, "sim_output", sim, "ego_lidar")
 # Output data/results directory
-reg_dir = os.path.join(base_dir, "registered_sim_output/sim_4/6_infra_2_agent")
+reg_dir = os.path.join(base_dir, "registered_sim_output", sim, permutation)
+slam_dir = os.path.join(base_dir, "slam_output_ego_only", sim)
+slam_test_pin = [d for d in os.listdir(slam_dir)][0]
+
 
 ego_ground_truth_file = os.path.join(sensor_data_ego_dir, "ground_truth_poses_tum.txt")
 ego_drifted_file = os.path.join(sensor_data_ego_dir, "gps_poses_tum.txt")
 registration_est_file = os.path.join(reg_dir, "reg_est_poses_tum.txt")
 registration_fitness_file = os.path.join(reg_dir, "reg_fitness.txt")
 inlier_rmse_file = os.path.join(reg_dir, "reg_inlier_rmse.txt")
+slam_file = os.path.join(slam_dir, slam_test_pin, "slam_poses_tum.txt")
 
-# TODO: Add functionality to tum file parser to load transforms?
-gt_poses = tum_load_as_tuples(ego_ground_truth_file)
-gps_poses = tum_load_as_tuples(ego_drifted_file)
-reg_poses = tum_load_as_tuples(registration_est_file)
+gt_transforms = [matrix for ts, matrix in tum_load_as_matrices(ego_ground_truth_file)]
+gps_transforms = [matrix for ts, matrix in tum_load_as_matrices(ego_drifted_file)]
+reg_transforms = [matrix for ts, matrix in tum_load_as_matrices(registration_est_file)]
+slam_transforms = [matrix for ts, matrix in tum_load_as_matrices(slam_file)]
 
-# [1:] omits timestamp
-gt_transforms = [pose_to_matrix(pose[1:]) for pose in gt_poses]
-gps_transforms = [pose_to_matrix(pose[1:]) for pose in gps_poses]
-reg_transforms = [pose_to_matrix(pose[1:]) for pose in reg_poses]
+# Align SLAM to ground truth coordinate system since SLAM starts at origin
+slam_transforms_aligned = align_matrix_list_to_matrix(slam_transforms, gt_transforms[0])
 
-max = 3.0 # Maximum error margin for better visualization
-
-gps_err_margins = calc_offset_margin(gt_transforms, gps_transforms, max=max)
-reg_err_margins = calc_offset_margin(gt_transforms, reg_transforms, max=max)
+gps_err_margins = calc_offset_margin(gt_transforms, gps_transforms)
+reg_err_margins = calc_offset_margin(gt_transforms, reg_transforms)
+slam_err_margins = calc_offset_margin(gt_transforms, slam_transforms_aligned)
 
 # Load fitness and RMSE data (stored as 1 float per line in text files)
 with open(registration_fitness_file, 'r') as f:
@@ -118,9 +46,22 @@ with open(registration_fitness_file, 'r') as f:
 with open(inlier_rmse_file, 'r') as f:
     inlier_rmse = [float(line.split(' ')[1].strip()) for line in f]
 
-plot_poses(
-    [gps_err_margins, reg_err_margins, fitness, inlier_rmse],
-    ['red', 'blue', 'orange', 'purple'],
-    ['GPS Error (m)', 'Registration Error (m)', 
-     'Registration Fitness', 'Registration Inlier RMSE']
+plt = get_split_pose_plot(
+    top_pose_sets=[gps_err_margins, reg_err_margins, slam_err_margins],
+    top_colors=['red', 'blue', 'black'],
+    top_labels=['GPS Error (m)', 'Registration Error (m)', 'SLAM Error (m)'],
+    
+    bottom_pose_sets=[fitness, inlier_rmse],
+    bottom_colors=['orange', 'purple'],
+    bottom_labels=['Registration Fitness', 'Registration Inlier RMSE'],
+
+    min_x=0, max_x=200,
+    top_min_y=0.0, top_max_y=6,
+    bottom_min_y=0.0, bottom_max_y=0.6,
+
+    title=permutation
 )
+
+# save as SVG
+plt.show()
+plt.savefig("pose_plot.svg", format='svg')
