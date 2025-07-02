@@ -13,6 +13,8 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
+random_seed = 42  # For reproducibility
+
 # Paths relative to this script file
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -35,7 +37,8 @@ def generate_gps_drift_for_sim(sim_name: str, ego_sensor: str):
         timestamps = np.array([entry[0] for entry in raw_data])
         poses = np.array([entry[1:] for entry in raw_data])  # shape (N, 7)
 
-        drifted_poses = simulate_gps_drift(poses)
+        drifted_poses = simulate_gps_drift(poses, seed=random_seed)
+        random_seed += 1  # Increment seed for next simulation
 
         drifted_data = [(ts,) + tuple(pose) for ts, pose in zip(timestamps, drifted_poses)]
         tum_save_tuples(gps_file, drifted_data)
