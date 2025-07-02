@@ -1,7 +1,7 @@
 import math
 import numpy as np
-import gtsam
 from gtsam import Pose3, Rot3, Point3
+from scipy.signal import savgol_filter
 from scipy.spatial.transform import Rotation as R
 
 
@@ -232,3 +232,84 @@ def align_slam_to_gps_timestamps(slam_poses, gps_poses):
             aligned_slam.append((gps_pose[0], *closest_slam[1:]))
 
     return aligned_slam
+
+
+def get_smooth_max_envelope(y, window=15, margin=0.05):
+    """
+    Compute a smooth upper envelope of the input signal using a sliding max and Savitzky–Golay filter.
+
+    Args:
+        y (list[float]): Input signal.
+        window (int): Window size for local maximum and smoothing.
+        margin (float): Margin to determine acceptance below the envelope.
+
+    Returns:
+        tuple[np.ndarray, list[int]]: Smoothed envelope and list of accepted indices where value >= envelope - margin.
+    """
+    y = np.array(y)
+    local_max = np.array([
+        np.max(y[max(0, i - window // 2):min(len(y), i + window // 2 + 1)])
+        for i in range(len(y))
+    ])
+    smooth_env = savgol_filter(local_max, window_length=15, polyorder=2)
+    accepted = [i for i in range(len(y)) if y[i] >= smooth_env[i] - margin]
+    return smooth_env, accepted
+
+
+def get_smooth_min_envelope(y, window=15, margin=0.05):
+    """
+    Compute a smooth lower envelope of the input signal using a sliding min and Savitzky–Golay filter.
+
+    Args:
+        y (list[float]): Input signal.
+        window (int): Window size for local minimum and smoothing.
+        margin (float): Margin to determine acceptance above the envelope.
+
+    Returns:
+        tuple[np.ndarray, list[int]]: Smoothed envelope and list of accepted indices where value <= envelope + margin.
+    """
+    y = np.array(y)
+    local_min = np.array([
+        np.min(y[max(0, i - window // 2):min(len(y), i + window // 2 + 1)])
+        for i in range(len(y))
+    ])
+    smooth_env = savgol_filter(local_min, window_length=15, polyorder=2)
+    accepted = [i for i in range(len(y)) if y[i] <= smooth_env[i] + margin]
+    return smooth_env, accepted
+
+
+def compute_umeyama_transform(src_points, dst_points):
+    """
+    Computes the rigid transformation T that maps src_points to dst_points
+    using the Umeyama method (least-squares rigid alignment).
+
+    Args:
+        src_points (np.ndarray): Nx3 array of source points (e.g. SLAM)
+        dst_points (np.ndarray): Nx3 array of destination points (e.g. Registration)
+
+    Returns:
+        np.ndarray: 4x4 rigid transformation matrix
+    """
+    assert src_points.shape == dst_points.shape
+
+    mu_src = np.mean(src_points, axis=0)
+    mu_dst = np.mean(dst_points, axis=0)
+
+    src_centered = src_points - mu_src
+    dst_centered = dst_points - mu_dst
+
+    H = src_centered.T @ dst_centered
+    U, _, Vt = np.linalg.svd(H)
+    R = Vt.T @ U.T
+
+    # Ensure right-handed (det(R) = +1)
+    if np.linalg.det(R) < 0:
+        Vt[-1, :] *= -1
+        R = Vt.T @ U.T
+
+    t = mu_dst - R @ mu_src
+
+    T = np.eye(4)
+    T[:3, :3] = R
+    T[:3, 3] = t
+    return T
