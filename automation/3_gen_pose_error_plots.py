@@ -1,6 +1,5 @@
 import os
 import logging
-import matplotlib.pyplot as plt
 
 from utils.tum_file_parser import tum_load_as_matrices
 from utils.math_utils import calc_offset_margin, align_matrix_list_to_matrix
@@ -13,6 +12,10 @@ logging.basicConfig(
     format="[%(asctime)s] %(levelname)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
+
+FORMAT = "svg"  # Save format for plots
+# How much to scale up font size
+FONT_SCALE = 1.05
 
 # Paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -59,7 +62,7 @@ def process_simulation(sim_name: str, permutation_name: str):
         inlier_rmse = [float(line.split(' ')[1].strip()) for line in f]
 
     # Generate plot
-    fig = get_split_pose_plot(
+    plt = get_split_pose_plot(
         top_pose_sets=[gps_err_margins, slam_err_margins, reg_err_margins],
         # red, cyan-ish, blue-ish
         # top_colors=['red', '#0412b0', '#00a7b3'],
@@ -71,15 +74,18 @@ def process_simulation(sim_name: str, permutation_name: str):
         bottom_labels=['Registration Fitness', 'Registration Inlier RMSE'],
 
         # min_x=0, max_x=len(gps_err_margins),
-        min_x=0, max_x=150,
+        # min_x=0, max_x=150,
+        # in of both
+        min_x=0, max_x=min(len(gps_err_margins), 150),
         top_min_y=-0.5, top_max_y=7,
         bottom_min_y=0.0, bottom_max_y=0.6,
-        title=permutation_name,
+        title=permutation_name
     )
 
     # Save
-    out_path = os.path.join(FIGURE_DIR, f"{sim_name}_{permutation_name}.svg")
-    fig.savefig(out_path, format='svg')
+    out_path = os.path.join(FIGURE_DIR, f"{sim_name}_{permutation_name}.{FORMAT}")
+    plt.savefig(out_path, format=FORMAT)
+    plt.close()
     logging.info(f"✅ Saved plot to {out_path}")
 
 

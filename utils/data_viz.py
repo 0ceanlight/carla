@@ -1,12 +1,12 @@
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import mplcursors
-from mpl_toolkits.mplot3d import Axes3D
 
 LINE_WIDTH = 2.5
+mpl.rcParams['font.size'] *= 2.0
 
-
-def get_pose_plot(pose_sets, colors, labels, min_x=None, max_x=None, min_y=None, max_y=None, title=None):
+def get_pose_plot(pose_sets, colors, labels, min_x=None, max_x=None, min_y=None, max_y=None, title=None, ylabel=None):
     """
     Plot multiple sequences of float values as 2D scatter plots.
 
@@ -61,7 +61,10 @@ def get_pose_plot(pose_sets, colors, labels, min_x=None, max_x=None, min_y=None,
     else:
         plt.title("Pose Absolute Error and Registration Fitness, RMSE")
     plt.xlabel("Frame Index")
-    plt.ylabel("Distance from ground truth (m) / Fitness / RMSE")
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    else:
+        plt.ylabel("Distance from ground truth (m) / Fitness / RMSE")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
