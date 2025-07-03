@@ -136,9 +136,8 @@ def find_closest_entry(
 
 
 def compute_differences(
-    seq1: List[Tuple[float, float, float, float, float, float, float,
-                     float]], seq2: List[Tuple[float, float, float, float,
-                                               float, float, float, float]]
+    seq1: List[Tuple[float, float, float, float, float, float, float, float]], 
+    seq2: List[Tuple[float, float, float, float, float, float, float, float]]
 ) -> List[Tuple[float, float, float, float]]:
     """
     Compute per-entry differences between two aligned sequences.
@@ -208,35 +207,145 @@ def compute_average_difference(
     return (total_trans / count, total_rot / count)
 
 
-def show_all_differences(file1: str, file2: str) -> None:
+def get_all_differences(file1: str, file2: str, align=True, start: Optional[int] = None, end: Optional[int] = None) -> Tuple[List[float], List[float], List[float], List[float]]:
     """
     Display per-entry differences between two TUM trajectory files.
 
     Args:
         file1 (str): Path to the first TUM file.
         file2 (str): Path to the second TUM file.
+        align (bool): Whether to align the sequences before computing differences.
+        start (Optional[int]): Start index for cropping the differences.
+        end (Optional[int]): End index for cropping the differences.
+
+    Returns:
+
+        Tuple containing lists of:
+            - Timestamps
+            - Time differences
+            - Translation differences (meters)
+            - Rotation differences (degrees)
     """
     seq1 = tum_load_as_tuples(file1)
     seq2 = tum_load_as_tuples(file2)
-    aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
-    differences = compute_differences(aligned_seq1, aligned_seq2)
-    print("Timestamp\tTimeDiff\tTransDiff\tRotDiff(deg)")
+    differences = None
+    if align:
+        aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
+        differences = compute_differences(aligned_seq1, aligned_seq2)
+    else:
+        # If not aligning, compute differences directly
+        differences = compute_differences(seq1, seq2)
+    # Crop the differences array if start and end are specified
+    # This allows for partial analysis of the data
+    if end is not None:
+        # end first bcz otherwise it can be offset by the start :)
+        differences = differences[:end]
+    if start is not None:
+        differences = differences[start:]
+
+    ret = ([], [], [], [])
     for t, time_diff, trans_diff, rot_diff in differences:
-        print(f"{t:.6f}\t{time_diff:.6f}\t{trans_diff:.6f}\t{rot_diff:.6f}")
+        ret[0].append(t)
+        ret[1].append(time_diff)
+        ret[2].append(trans_diff)
+        ret[3].append(rot_diff)
+    return ret
 
 
-def show_average_difference(file1: str, file2: str) -> None:
+def get_average_difference(file1: str, file2: str, align=True, start: Optional[int] = None, end: Optional[int] = None) -> Tuple[float, float]:
     """
     Display average translation and rotation differences between two TUM trajectory files.
 
     Args:
         file1 (str): Path to the first TUM file.
         file2 (str): Path to the second TUM file.
+        align (bool): Whether to align the sequences before computing differences.
+        start (Optional[int]): Start index for cropping the differences.
+        end (Optional[int]): End index for cropping the differences.
+
+    Returns:
+        Tuple[float, float]: Average translation difference (meters) and average rotation difference (degrees).
     """
     seq1 = tum_load_as_tuples(file1)
     seq2 = tum_load_as_tuples(file2)
-    aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
-    differences = compute_differences(aligned_seq1, aligned_seq2)
+    differences = None
+    if align:
+        aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
+        differences = compute_differences(aligned_seq1, aligned_seq2)
+    else:
+        # If not aligning, compute differences directly
+        differences = compute_differences(seq1, seq2)
+    # Crop the differences array if start and end are specified
+    # This allows for partial analysis of the data
+    if end is not None:
+        # end first bcz otherwise it can be offset by the start :)
+        differences = differences[:end]
+    if start is not None:
+        differences = differences[start:]
+    avg_trans_diff, avg_rot_diff = compute_average_difference(differences)
+    print(f"Average Translation Difference (meters): {avg_trans_diff:.6f}m")
+    print(f"Average Rotation Difference (degrees): {avg_rot_diff:.6f}°")
+
+
+def show_all_differences(file1: str, file2: str, align=True, start: Optional[int] = None, end: Optional[int] = None) -> None:
+    """
+    Display per-entry differences between two TUM trajectory files.
+
+    Args:
+        file1 (str): Path to the first TUM file.
+        file2 (str): Path to the second TUM file.
+        align (bool): Whether to align the sequences before computing differences.
+        start (Optional[int]): Start index for cropping the differences.
+        end (Optional[int]): End index for cropping the differences.
+    """
+    seq1 = tum_load_as_tuples(file1)
+    seq2 = tum_load_as_tuples(file2)
+    differences = None
+    if align:
+        aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
+        differences = compute_differences(aligned_seq1, aligned_seq2)
+    else:
+        # If not aligning, compute differences directly
+        differences = compute_differences(seq1, seq2)
+    # Crop the differences array if start and end are specified
+    # This allows for partial analysis of the data
+    if end is not None:
+        # end first bcz otherwise it can be offset by the start :)
+        differences = differences[:end]
+    if start is not None:
+        differences = differences[start:]
+    print("Timestamp\tTimeDiff\tTransDiff\tRotDiff(deg)")
+    for t, time_diff, trans_diff, rot_diff in differences:
+        print(f"{t:.6f}\t{time_diff:.6f}\t{trans_diff:.6f}\t{rot_diff:.6f}")
+
+
+def show_average_difference(file1: str, file2: str, align=True, start: Optional[int] = None, end: Optional[int] = None) -> None:
+    """
+    Display average translation and rotation differences between two TUM trajectory files.
+
+    Args:
+        file1 (str): Path to the first TUM file.
+        file2 (str): Path to the second TUM file.
+        align (bool): Whether to align the sequences before computing differences.
+        start (Optional[int]): Start index for cropping the differences.
+        end (Optional[int]): End index for cropping the differences.
+    """
+    seq1 = tum_load_as_tuples(file1)
+    seq2 = tum_load_as_tuples(file2)
+    differences = None
+    if align:
+        aligned_seq1, aligned_seq2 = align_sequences(seq1, seq2)
+        differences = compute_differences(aligned_seq1, aligned_seq2)
+    else:
+        # If not aligning, compute differences directly
+        differences = compute_differences(seq1, seq2)
+    # Crop the differences array if start and end are specified
+    # This allows for partial analysis of the data
+    if end is not None:
+        # end first bcz otherwise it can be offset by the start :)
+        differences = differences[:end]
+    if start is not None:
+        differences = differences[start:]
     avg_trans_diff, avg_rot_diff = compute_average_difference(differences)
     print(f"Average Translation Difference (meters): {avg_trans_diff:.6f}m")
     print(f"Average Rotation Difference (degrees): {avg_rot_diff:.6f}°")
