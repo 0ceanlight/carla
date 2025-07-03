@@ -151,4 +151,4 @@ def tum_save_matrices(path, matrix_pose_list):
         pose = matrix_to_pose(matrix)
         tum_data.append((timestamp, *pose))
 
-    tum_save_tuples(path, *tum_data)
+    tum_save_tuples(path, tum_data)
