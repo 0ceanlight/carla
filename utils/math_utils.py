@@ -119,6 +119,22 @@ def pose_difference(
     return translation_diff, rotation_diff_deg
 
 
+def matrix_euclidean_distance(T2: np.ndarray, T1: np.ndarray) -> float:
+    """
+    Calculate the Euclidean distance between two 4x4 transformation matrices.
+
+    Args:
+        T2 (np.ndarray): Second transformation matrix (4x4).
+        T1 (np.ndarray): First transformation matrix (4x4).
+
+    Returns:
+        float: Euclidean distance between the translations of T1 and T2.
+    """
+    assert T1.shape == (4, 4) and T2.shape == (4, 4), "Both inputs must be 4x4 matrices."
+    translation_diff = T2[:3, 3] - T1[:3, 3]
+    return np.linalg.norm(translation_diff)
+
+
 def calc_offset_margin(transform_arr_1, transform_arr_2, weight=1.0):
     """
     Calculate the absolute offset margin per-pose between two lists of transforms.
@@ -194,6 +210,37 @@ def align_matrix_list_to_matrix(matrix_list, matrix):
 
     aligned_matrices = [T_align @ T for T in matrix_list]
     return aligned_matrices
+
+
+def align_matrix_list_to_matrix_rotation_only(matrix_list, matrix):
+    """
+    Align the rotations of entries in a trajectory (list of matrices) so they start
+    with the same rotation as the given reference matrix. This does not affect 
+    the translation of each matrix.
+
+    Args:
+        matrix_list (list): Trajectory to align, as list of 4x4 np.ndarrays.
+        matrix (np.ndarray): Reference 4x4 transformation matrix to align rotations to.
+    """
+    assert isinstance(matrix_list, list) and all(m.shape == (4, 4) for m in matrix_list), \
+        "matrix_list must be a list of 4x4 matrices."
+    assert matrix.shape == (4, 4), "matrix must be a 4x4 matrix."
+
+    # Get rotation part of reference and first trajectory matrix
+    R_target = matrix[:3, :3]
+    R_first = matrix_list[0][:3, :3]
+
+    # Compute rotation that brings R_first to R_target
+    R_align = R_target @ R_first.T  # Equivalent to R_target * inverse(R_first)
+
+    aligned_list = []
+    for mat in matrix_list:
+        aligned = np.eye(4)
+        aligned[:3, :3] = R_align @ mat[:3, :3]
+        aligned[:3, 3] = mat[:3, 3]  # Preserve translation
+        aligned_list.append(aligned)
+
+    return aligned_list
 
 
 def align_pose_list_to_pose(pose_list, pose):
