@@ -5,6 +5,7 @@ from utils.tum_file_parser import tum_load_as_matrices
 from utils.math_utils import calc_offset_margin, align_matrix_list_to_matrix
 from utils.data_viz import get_split_pose_plot
 import config.dataset_structure_parser as dataset_parser
+from config.graph_colors import graph_colors
 
 # Setup logging
 logging.basicConfig(
@@ -21,7 +22,7 @@ FONT_SCALE = 1.05
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "..", "config", "dataset_structure.jsonc")
 BUILD_DIR = os.path.join(SCRIPT_DIR, "..", "build")
-FIGURE_DIR = os.path.join(BUILD_DIR, "figures")
+FIGURE_DIR = os.path.join(BUILD_DIR, "figures", "pose_error_plots")
 os.makedirs(FIGURE_DIR, exist_ok=True)
 
 
@@ -64,13 +65,11 @@ def process_simulation(sim_name: str, permutation_name: str):
     # Generate plot
     plt = get_split_pose_plot(
         top_pose_sets=[gps_err_margins, slam_err_margins, reg_err_margins],
-        # red, cyan-ish, blue-ish
-        # top_colors=['red', '#0412b0', '#00a7b3'],
-        top_colors=['red', 'blue', 'green'],
+        top_colors=[graph_colors.gps, graph_colors.slam, graph_colors.registration],
         top_labels=['GPS Error (m)', 'SLAM Error (m)', 'Registration Error (m)'],
 
         bottom_pose_sets=[fitness, inlier_rmse],
-        bottom_colors=['orange', 'purple'],
+        bottom_colors=[graph_colors.fitness, graph_colors.inlier_rmse],
         bottom_labels=['Registration Fitness', 'Registration Inlier RMSE'],
 
         # min_x=0, max_x=len(gps_err_margins),

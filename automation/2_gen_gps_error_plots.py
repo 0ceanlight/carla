@@ -2,6 +2,7 @@ import os
 import logging
 
 import config.dataset_structure_parser as dataset_parser
+from config.graph_colors import graph_colors
 from utils.tum_file_parser import tum_load_as_matrices
 from utils.math_utils import calc_offset_margin
 from utils.data_viz import get_pose_plot
@@ -51,7 +52,7 @@ for sim_name in sim_configs:
 
     fig = get_pose_plot(
         pose_sets=[gps_err_margins],
-        colors=["red"],
+        colors=[graph_colors.gps],
         labels=["GPS Error (m)"],
         min_x=0, max_x=len(gps_err_margins) - 1,
         min_y=0.0, max_y=20.0,
