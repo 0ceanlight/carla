@@ -69,7 +69,7 @@ def process_simulation(sim_name: str, permutation_name: str):
         weight_rmse=1.2
     )
 
-    accepted_indices_filtered = remove_outliers(accepted_indices, reg_transforms, max_offset_m=0.5)
+    accepted_indices_filtered = remove_outliers_accepted_reg_indices(accepted_indices, reg_transforms, max_offset_m=0.5)
 
     fused_transforms = optimize_pose_graph(slam_transforms_aligned, reg_transforms, accepted_indices_filtered)
 

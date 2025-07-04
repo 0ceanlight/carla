@@ -4,7 +4,7 @@ import logging
 from utils.tum_file_parser import tum_load_as_matrices
 from utils.tum_file_comparator import get_average_difference 
 from utils.math_utils import align_matrix_list_to_matrix, matrix_euclidean_distance
-from utils.pose_graph_optimization import combine_fitness_rmse_acceptance, remove_outliers
+from utils.pose_graph_optimization import combine_fitness_rmse_acceptance, remove_outliers_accepted_reg_indices
 import config.dataset_structure_parser as dataset_parser
 from config.graph_colors import graph_colors
 
@@ -104,7 +104,7 @@ def process_simulation(sim_name: str, permutation_name: str):
         weight_rmse=1.2
     )
 
-    accepted_indices_filtered = remove_outliers(accepted_indices, reg_transforms, max_offset_m=0.5)
+    accepted_indices_filtered = remove_outliers_accepted_reg_indices(accepted_indices, reg_transforms, max_offset_m=0.5)
 
     # in the accepted_indices_filtered array, find the first and last indices with 2 consecutive numbers
     valid_reg_frame_start, valid_reg_frame_end = find_consecutive_streaks(accepted_indices_filtered, 2)
