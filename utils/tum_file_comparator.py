@@ -283,8 +283,7 @@ def get_average_difference(file1: str, file2: str, align=True, start: Optional[i
     if start is not None:
         differences = differences[start:]
     avg_trans_diff, avg_rot_diff = compute_average_difference(differences)
-    print(f"Average Translation Difference (meters): {avg_trans_diff:.6f}m")
-    print(f"Average Rotation Difference (degrees): {avg_rot_diff:.6f}°")
+    return avg_trans_diff, avg_rot_diff
 
 
 def show_all_differences(file1: str, file2: str, align=True, start: Optional[int] = None, end: Optional[int] = None) -> None:
