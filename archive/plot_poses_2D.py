@@ -2,7 +2,7 @@ import os
 from utils.tum_file_parser import tum_load_as_matrices
 from utils.math_utils import *
 from utils.data_viz import get_split_pose_plot
-from utils.slam_reg_fusion import combine_fitness_rmse_acceptance
+from utils.pose_graph_optimization import combine_fitness_rmse_acceptance
 
 
 base_dir = "build.old.log"
