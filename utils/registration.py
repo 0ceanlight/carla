@@ -36,11 +36,11 @@ def execute_global_registration(source_down, target_down, source_fpfh, target_fp
 
     return result
 
-def refine_registration(source, target, initial_trans, voxel_size):
-    distance_threshold = voxel_size * 0.4
+def refine_registration(source, target, initial_trans, voxel_size, max_iterations=30):
     result = o3d.pipelines.registration.registration_icp(
-        source, target, distance_threshold, initial_trans,
-        o3d.pipelines.registration.TransformationEstimationPointToPlane())
+        source, target, voxel_size, initial_trans,
+        o3d.pipelines.registration.TransformationEstimationPointToPlane(), 
+        max_iterations=max_iterations)
 
     logging.debug(f"ICP Refinement:")
     logging.debug(f"  Fitness: {result.fitness:.4f}")
@@ -128,7 +128,7 @@ def register_multiple_point_clouds(
         
         # Refine registration using ICP
         refined_result = refine_registration(
-            next_cloud, merged_cloud, ransac_result.transformation, voxel_size)
+            next_cloud, merged_cloud, ransac_result.transformation, voxel_size * 0.4)
 
         # Apply the refined transformation to the next cloud
         next_cloud.transform(refined_result.transformation)
