@@ -5,6 +5,9 @@ from utils.tum_file_parser import tum_load_as_matrices
 from utils.math_utils import calc_offset_margin
 from utils.pose_graph_optimization import combine_fitness_rmse_acceptance
 from config.graph_colors import graph_colors
+import matplotlib as mpl
+
+mpl.rcParams['font.size'] *= 1.35
 
 # === CONFIGURATION ===
 # BASE_PATH = "build/registered_sim_output/sim_1/4_infra_2_agent"
