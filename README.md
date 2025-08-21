@@ -1,6 +1,21 @@
-# Multi-Modal Collaborative Perception for V2X in CARLA
+<p align="center">
+<h1 align="center">Multi-Modal Collaborative Perception for V2X in CARLA</h1>
+
+  <p align="center">
+    <a href="https://github.com/0ceanlight/carla#starting-the-container"><img src="https://img.shields.io/badge/-Docker-2496ED?style=flat-square&logo=Docker&logoColor=white" /></a>
+    <a href="https://github.com/0ceanlight/carla#python-packages"><img src="https://img.shields.io/badge/python-3670A0?style=flat-square&logo=python&logoColor=ffdd54" /></a>
+    <a href="https://drive.google.com/file/d/1GWYTYjibJONULrEsY3bM9CpGix62-yYt/view?usp=sharing"><img src="https://img.shields.io/badge/Paper-pdf-<COLOR>.svg?style=flat-square" /></a>
+    <a href="https://github.com/0ceanlight/carla/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" /></a>
+  </p>
+
+  <p align="center"><a href="https://www.tum.de/"><strong>Technical University of Munich</strong></a>
+  <h3 align="center"><a href="https://drive.google.com/file/d/1GWYTYjibJONULrEsY3bM9CpGix62-yYt/view?usp=sharing">Project Paper</a></h3>
+  <div align="center"></div>
+</p>
 
 This project presents a 3D point cloud alignment approach for the localization of a vehicle in an intersection with sub-decimeter accuracy using multi-modal collaborative perception. 
+
+
 
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
